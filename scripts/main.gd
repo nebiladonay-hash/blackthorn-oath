@@ -3,6 +3,7 @@ extends Node3D
 const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
 const HazardScript = preload("res://scripts/hazard.gd")
+const RelicScript = preload("res://scripts/relic.gd")
 const LANE_WIDTH := 2.6
 const SEGMENT_LENGTH := 28.0
 
@@ -12,14 +13,20 @@ var segments: Array[Node3D] = []
 var next_z := 0.0
 var distance := 0.0
 var kills := 0
+var relics := 0
+var best_distance := 0
+var save_data := ConfigFile.new()
 var run_over := false
 var score_label: Label
 var health_label: Label
+var relic_label: Label
+var best_label: Label
 var message_label: Label
 var ui_layer: CanvasLayer
 var started_at := 0.0
 
 func _ready() -> void:
+	_load_progress()
 	_make_environment()
 	player = PlayerScript.new()
 	player.position = Vector3(0, 0.1, 2)
@@ -42,6 +49,8 @@ func _process(delta: float) -> void:
 	distance = maxf(distance, -player.global_position.z)
 	player.forward_speed = minf(12.0 + (Time.get_ticks_msec() / 1000.0 - started_at) * 0.12, 19.0)
 	score_label.text = "DISTANCE  %05d m     KILLS  %02d" % [int(distance), kills]
+	relic_label.text = "RELICS  %03d" % relics
+	best_label.text = "BEST  %05d m" % best_distance
 	camera.global_position = camera.global_position.lerp(player.global_position + Vector3(0, 5.1, 9.5), delta * 5.0)
 	camera.look_at(player.global_position + Vector3(0, 1, -5.5), Vector3.UP)
 	if player.global_position.z < next_z + SEGMENT_LENGTH * 2:
@@ -104,6 +113,15 @@ func _make_ui() -> void:
 	health_label = Label.new()
 	health_label.position = Vector2(22, 50)
 	health_label.text = "VITALITY  ♥ ♥ ♥"
+	relic_label = Label.new()
+	relic_label.position = Vector2(22, 80)
+	relic_label.text = "RELICS  000"
+	relic_label.add_theme_color_override("font_color", Color(0.95, 0.68, 0.22))
+	root.add_child(relic_label)
+	best_label = Label.new()
+	best_label.position = Vector2(22, 108)
+	best_label.text = "BEST  %05d m" % best_distance
+	root.add_child(best_label)
 	health_label.add_theme_color_override("font_color", Color(0.8, 0.18, 0.14))
 	root.add_child(health_label)
 	message_label = Label.new()
@@ -117,6 +135,7 @@ func _make_ui() -> void:
 	get_tree().create_timer(4.0).timeout.connect(func(): message_label.visible = false)
 	_button(root, "◀", Vector2(24, -95), Vector2(72, 70), func(): player.move_lane(-1), Control.PRESET_BOTTOM_LEFT)
 	_button(root, "▶", Vector2(105, -95), Vector2(72, 70), func(): player.move_lane(1), Control.PRESET_BOTTOM_LEFT)
+	_button(root, "SLIDE", Vector2(-275, -95), Vector2(82, 70), func(): player.slide(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "JUMP", Vector2(-185, -95), Vector2(82, 70), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "ATTACK", Vector2(-95, -95), Vector2(92, 70), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT)
 
@@ -156,6 +175,10 @@ func _spawn_segment(z: float) -> void:
 			hazard.add_child(shape_node)
 			_box(hazard, Vector3.ZERO, Vector3(1.5, 1.1, 1.5), Color(0.2, 0.07, 0.05))
 			segment.add_child(hazard)
+		var relic_lane := (lane + 1 + (row % 2)) % 3
+		var relic := RelicScript.new()
+		relic.position = Vector3(float(relic_lane - 1) * LANE_WIDTH, 1.15, pz - 3.5)
+		segment.add_child(relic)
 	next_z = z - SEGMENT_LENGTH
 
 func _box(parent: Node3D, pos: Vector3, size: Vector3, color: Color, solid := false) -> void:
@@ -183,9 +206,24 @@ func _on_health(value: int) -> void:
 
 func _on_death() -> void:
 	run_over = true
+	best_distance = maxi(best_distance, int(distance))
+	_save_progress()
+	best_label.text = "BEST  %05d m" % best_distance
 	message_label.visible = true
 	message_label.text = "YOU HAVE FALLEN\nDISTANCE %d m • KILLS %d" % [int(distance), kills]
 	_button(ui_layer.get_child(0), "RESTART", Vector2(-90, 90), Vector2(180, 60), func(): get_tree().reload_current_scene(), Control.PRESET_CENTER)
 
 func add_kill() -> void:
 	kills += 1
+
+func add_relic() -> void:
+	relics += 1
+	relic_label.text = "RELICS  %03d" % relics
+
+func _load_progress() -> void:
+	if save_data.load("user://blackthorn_oath.cfg") == OK:
+		best_distance = int(save_data.get_value("progress", "best_distance", 0))
+
+func _save_progress() -> void:
+	save_data.set_value("progress", "best_distance", best_distance)
+	save_data.save("user://blackthorn_oath.cfg")
