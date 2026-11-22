@@ -6,7 +6,9 @@ A phone-first, 3D dark-fantasy endless runner prototype built with **Godot 4**.
 - Three-lane forward movement with swipe and on-screen controls.
 - Jump, slide, and melee attack inputs.
 - Procedurally generated stone track segments.
-- Basic enemy and hazard encounters.
+- Three enemy archetypes: Hollow Guard, Bloodhound, and Executioner.
+- Jump-over and slide-under obstacle variants.
+- Collectible glowing relics, health, distance, kills, and saved best distance.
 - Health, distance, kills, and restart UI.
 - Android export preset and GitHub Actions workflows.
 
