@@ -2,12 +2,12 @@
 
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
-## Prototype 0.3.0 — The Cathedral Prologue
+## Prototype 0.3.1 — The Cathedral Awakens
 
 This milestone is focused on world scale, atmosphere and a more compelling opening:
 
-- An 18-second scripted cinematic opening: aerial cathedral reveal, approach to the sealed gate, knight reveal, and hero-follow shot.
-- Original 24-second ambient score, composed specifically for the game and looped in the opening and run.
+- An 18-second cinematic opening with an aerial cathedral reveal, a camera approach, iron gates that open on cue, a glowing Bell Warden reveal, a knight close-up and a hero-follow shot.
+- Original 24-second ambient score, composed specifically for the game, with bell impacts timed to the gate reveal.
 - Monumental gothic cathedral facade with twin towers, pointed arches, rose window, stained-glass panes, iron doors, sentinels, roofline spires and broad approach steps.
 - Layered distant ridges and watchtowers to establish depth beyond the road.
 - Procedural PBR-style stone shader with noise, grain and weathering variation.
@@ -34,4 +34,4 @@ Open the repository in Godot 4.4.1 with matching export templates. Android expor
 
 ## Honest status
 
-Prototype 0.3.0 is a more atmospheric, cinematic vertical slice, not a finished commercial game. The environment is still procedural rather than a photogrammetry-based or artist-authored asset set. The character and enemies still need high-quality rigged models, hand-authored animation, hit reactions and polish. It still needs physical-device visual/performance QA, a real boss encounter, additional level chapters, settings, accessibility, release signing, privacy and store preparation. A successful CI check confirms Godot can import and launch the scene; it does not replace testing on an Android phone.
+Prototype 0.3.1 is a more atmospheric, cinematic vertical slice, not a finished commercial game. The environment is still procedural rather than a photogrammetry-based or artist-authored asset set. The character and enemies still need high-quality rigged models, hand-authored animation, hit reactions and polish. It still needs physical-device visual/performance QA, a real boss encounter, additional level chapters, settings, accessibility, release signing, privacy and store preparation. A successful CI check confirms Godot can import and launch the scene; it does not replace testing on an Android phone.
