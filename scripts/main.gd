@@ -187,6 +187,21 @@ func _spawn_segment(z: float) -> void:
 			shape_node.shape = shape
 			hazard.add_child(shape_node)
 			_box(hazard, Vector3.ZERO, obstacle_size, Color(0.2, 0.07, 0.05))
+			if not overhead:
+				for spike_index in range(3):
+					var spike := MeshInstance3D.new()
+					var spike_mesh := ConeMesh.new()
+					spike_mesh.bottom_radius = 0.24
+					spike_mesh.top_radius = 0.015
+					spike_mesh.height = 0.62
+					spike_mesh.radial_segments = 5
+					spike.mesh = spike_mesh
+					spike.position = Vector3(-0.42 + float(spike_index) * 0.42, 0.72, 0)
+					var spike_material := StandardMaterial3D.new()
+					spike_material.albedo_color = Color(0.42, 0.39, 0.4)
+					spike_material.metallic = 0.82
+					spike.material_override = spike_material
+					hazard.add_child(spike)
 			segment.add_child(hazard)
 		var relic_lane := (lane + 1 + (row % 2)) % 3
 		var relic := RelicScript.new()
