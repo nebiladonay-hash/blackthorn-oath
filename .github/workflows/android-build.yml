@@ -93,7 +93,8 @@ jobs:
       - name: Import project and reject script errors
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
+          grep -F 'textures/vram_compression/import_etc2_astc=true' project.godot
           godot --headless --editor --path . --quit 2>&1 | tee /tmp/godot-import.log
           if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-import.log; then
             echo "::error::Godot reported a project script error."
@@ -105,6 +106,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$HOME/.android/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="androiddebugkey"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
           godot --headless --verbose --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk 2>&1 | tee /tmp/godot-export.log
           test -s build/BLACKTHORN-OATH-debug.apk
           unzip -t build/BLACKTHORN-OATH-debug.apk
