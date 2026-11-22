@@ -119,6 +119,8 @@ func _build_player_and_camera() -> void:
 	player.position = Vector3(0, 0, -3.0)
 	player.forward_speed = 0.0
 	add_child(player)
+	player.health_changed.connect(_on_health_changed)
+	player.died.connect(_on_player_died)
 
 	camera = Camera3D.new()
 	camera.name = "GameplayCamera"
