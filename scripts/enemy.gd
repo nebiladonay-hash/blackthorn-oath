@@ -10,6 +10,9 @@ var attack_interval := 1.35
 var damage := 1
 var player: BlackthornOathPlayer
 var is_dead := false
+var body_visual: MeshInstance3D
+var hit_flash := 0.0
+var base_color := Color(0.12, 0.09, 0.11)
 
 func configure(kind: int) -> void:
 	archetype = clampi(kind, 0, 2)
@@ -34,6 +37,12 @@ func _process(delta: float) -> void:
 	if is_dead or not is_instance_valid(player) or player.dead:
 		return
 	attack_timer = maxf(0.0, attack_timer - delta)
+	if hit_flash > 0.0:
+		hit_flash = maxf(0.0, hit_flash - delta)
+		if hit_flash == 0.0 and is_instance_valid(body_visual):
+			(body_visual.material_override as StandardMaterial3D).albedo_color = base_color
+	if is_instance_valid(player):
+		look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
 	var distance_z := absf(global_position.z - player.global_position.z)
 	var distance_x := absf(global_position.x - player.global_position.x)
 	if distance_z < 1.65 and distance_x < 1.0 and attack_timer <= 0.0:
@@ -44,6 +53,9 @@ func take_damage(amount: int = 1) -> void:
 	if is_dead:
 		return
 	health -= amount
+	hit_flash = 0.12
+	if is_instance_valid(body_visual):
+		(body_visual.material_override as StandardMaterial3D).albedo_color = Color(0.9, 0.08, 0.055)
 	if health <= 0:
 		is_dead = true
 		var main := get_tree().current_scene
@@ -76,6 +88,8 @@ func _build_enemy() -> void:
 			material.metallic = 0.6
 	body.mesh = mesh
 	body.material_override = material
+	body_visual = body
+	base_color = material.albedo_color
 	body.position.y = mesh.height * 0.5
 	add_child(body)
 	var eye := MeshInstance3D.new()
