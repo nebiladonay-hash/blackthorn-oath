@@ -137,13 +137,13 @@ func _make_ui() -> void:
 	message_label.add_theme_font_size_override("font_size", 28)
 	message_label.text = "BLACKTHORN OATH\nSwipe left/right to change lanes • up to jump • down to slide\nAttack enemies and collect glowing relics"
 	root.add_child(message_label)
-	get_tree().create_timer(4.0).timeout.connect(func(): message_label.visible = false)
+	get_tree().create_timer(4.0).timeout.connect(_hide_intro_message)
 	_button(root, "◀", Vector2(24, -95), Vector2(72, 70), func(): player.move_lane(-1), Control.PRESET_BOTTOM_LEFT)
 	_button(root, "▶", Vector2(105, -95), Vector2(72, 70), func(): player.move_lane(1), Control.PRESET_BOTTOM_LEFT)
 	_button(root, "SLIDE", Vector2(-275, -95), Vector2(82, 70), func(): player.slide(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "JUMP", Vector2(-185, -95), Vector2(82, 70), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "ATTACK", Vector2(-95, -95), Vector2(92, 70), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT)
-	pause_button = _button(root, "Ⅱ", Vector2(-88, 18), Vector2(66, 56), func(): _toggle_pause(), Control.PRESET_TOP_RIGHT)
+	pause_button = _button(root, "Ⅱ", Vector2(-132, 18), Vector2(120, 56), func(): _toggle_pause(), Control.PRESET_TOP_RIGHT)
 
 func _button(root: Control, caption: String, offset: Vector2, dimensions: Vector2, action: Callable, preset: int) -> Button:
 	var b := Button.new()
@@ -315,6 +315,10 @@ func _save_progress() -> void:
 	save_data.set_value("progress", "best_distance", best_distance)
 	save_data.set_value("progress", "relic_bank", relic_bank)
 	save_data.save("user://blackthorn_oath.cfg")
+
+func _hide_intro_message() -> void:
+	if not run_over and not get_tree().paused and is_instance_valid(message_label):
+		message_label.visible = false
 
 func _toggle_pause() -> void:
 	if run_over:
