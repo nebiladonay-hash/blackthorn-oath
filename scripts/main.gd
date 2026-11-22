@@ -1087,12 +1087,6 @@ func _show_game_over() -> void:
 	modal_panel.show()
 	_update_hud()
 
-func _on_modal_action_pressed() -> void:
-	if game_over:
-		get_tree().reload_current_scene()
-	else:
-		_resume_run()
-
 func add_kill() -> void:
 	kills += 1
 
