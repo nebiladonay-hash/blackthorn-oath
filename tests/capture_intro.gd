@@ -11,7 +11,8 @@ func _capture_intro() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 		DisplayServer.window_set_size(Vector2i(1280, 720))
 
-	var scene := load(MAIN_SCENE).instantiate()
+	var packed_scene: PackedScene = load(MAIN_SCENE) as PackedScene
+	var scene: Node3D = packed_scene.instantiate()
 	get_root().add_child(scene)
 	current_scene = scene
 
