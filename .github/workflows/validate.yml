@@ -13,11 +13,28 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
       image: barichello/godot-ci:4.4.1
     steps:
       - uses: actions/checkout@v4
-      - name: Import project resources
-        run: godot --headless --editor --path . --quit
+
+      - name: Import project and reject script parse errors
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --editor --path . --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-import.log; then
+            echo "::error::Godot reported a script import or parse error."
+            exit 1
+          fi
+
       - name: Run main scene smoke check
-        run: timeout 20s godot --headless --path . --quit-after 120
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout 30s godot --headless --path . --quit-after 180 2>&1 | tee /tmp/godot-smoke.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-smoke.log; then
+            echo "::error::Godot reported a runtime script error."
+            exit 1
+          fi
