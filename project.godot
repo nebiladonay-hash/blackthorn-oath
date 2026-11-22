@@ -25,8 +25,8 @@ environment/defaults/default_clear_color=Color(0.018, 0.014, 0.025, 1)
 3d/default_gravity=24.0
 
 [input]
-lane_left={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":65),Object(InputEventKey,"physical_keycode":16777231)]}
-lane_right={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":68),Object(InputEventKey,"physical_keycode":16777233)]}
-jump={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":32),Object(InputEventKey,"physical_keycode":16777232)]}
-slide={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":83),Object(InputEventKey,"physical_keycode":16777234)]}
-attack={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":70),Object(InputEventKey,"physical_keycode":16777238)]}
+lane_left={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":65),Object(InputEventKey,"physical_keycode":4194319)]}
+lane_right={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":68),Object(InputEventKey,"physical_keycode":4194321)]}
+jump={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":32),Object(InputEventKey,"physical_keycode":4194320)]}
+slide={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":83),Object(InputEventKey,"physical_keycode":4194322)]}
+attack={"deadzone":0.5,"events":[Object(InputEventKey,"physical_keycode":70)]}
