@@ -214,7 +214,7 @@ func _build_interface() -> void:
 	modal_body = _label("The ruins are silent. Your oath remains.", 15, Color(0.72, 0.67, 0.68))
 	modal_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	modal_box.add_child(modal_body)
-	modal_action = _button(modal_box, "RESUME", Vector2.ZERO, Vector2(0, 58), _resume_run, Control.PRESET_TOP_LEFT, 19)
+	modal_action = _button(modal_box, "RESUME", Vector2.ZERO, Vector2(0, 58), _on_modal_action_pressed, Control.PRESET_TOP_LEFT, 19)
 	modal_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 func _start_run() -> void:
@@ -239,8 +239,6 @@ func _toggle_pause() -> void:
 	modal_title.text = "PAUSED"
 	modal_body.text = "Catch your breath. The Hollow is still waiting."
 	modal_action.text = "RESUME"
-	modal_action.pressed.disconnect(_resume_run)
-	modal_action.pressed.connect(_resume_run)
 	modal_panel.show()
 	pause_button.text = "▶"
 
@@ -260,10 +258,13 @@ func _show_game_over() -> void:
 	modal_title.text = "OATH BROKEN"
 	modal_body.text = "DISTANCE  %d m     KILLS  %d\nRELICS FOUND  %d\nBEST RUN  %d m" % [int(distance), kills, relics, best_distance]
 	modal_action.text = "RUN AGAIN"
-	for connection in modal_action.pressed.get_connections():
-		modal_action.pressed.disconnect(connection.callable)
-	modal_action.pressed.connect(func(): get_tree().reload_current_scene())
 	modal_panel.show()
+
+func _on_modal_action_pressed() -> void:
+	if game_over:
+		get_tree().reload_current_scene()
+	else:
+		_resume_run()
 
 func _make_overlay_panel(parent: Control, dimensions: Vector2) -> PanelContainer:
 	var panel := PanelContainer.new()
