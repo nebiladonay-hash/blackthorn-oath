@@ -158,6 +158,7 @@ func _spawn_segment(z: float) -> void:
 		_box(segment, Vector3(float(side) * 4.7, 0.2, -14), Vector3(0.4, 1.1, SEGMENT_LENGTH), Color(0.045, 0.035, 0.05), true)
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
+	_add_ruins(segment, rng)
 	for row in range(3):
 		var lane := rng.randi_range(0, 2)
 		var pz := -7.0 - float(row) * 8.0
@@ -184,6 +185,62 @@ func _spawn_segment(z: float) -> void:
 		relic.position = Vector3(float(relic_lane - 1) * LANE_WIDTH, 1.15, pz - 3.5)
 		segment.add_child(relic)
 	next_z = z - SEGMENT_LENGTH
+
+func _add_ruins(parent: Node3D, rng: RandomNumberGenerator) -> void:
+	var stone := StandardMaterial3D.new()
+	stone.albedo_color = Color(0.075, 0.07, 0.09)
+	stone.roughness = 0.92
+	var worn_stone := StandardMaterial3D.new()
+	worn_stone.albedo_color = Color(0.13, 0.11, 0.12)
+	worn_stone.roughness = 0.88
+	var ember := StandardMaterial3D.new()
+	ember.albedo_color = Color(0.9, 0.19, 0.035)
+	ember.emission_enabled = true
+	ember.emission = Color(0.9, 0.08, 0.012)
+	for side in [-1.0, 1.0]:
+		for depth in [-4.0, -19.0]:
+			var height := rng.randf_range(3.4, 5.8)
+			var pillar := MeshInstance3D.new()
+			var cylinder := CylinderMesh.new()
+			cylinder.top_radius = rng.randf_range(0.34, 0.48)
+			cylinder.bottom_radius = 0.52
+			cylinder.height = height
+			cylinder.radial_segments = 7
+			pillar.mesh = cylinder
+			pillar.position = Vector3(side * 5.55, height * 0.5, depth)
+			pillar.material_override = stone
+			parent.add_child(pillar)
+			var base := MeshInstance3D.new()
+			var base_mesh := BoxMesh.new()
+			base_mesh.size = Vector3(1.35, 0.34, 1.35)
+			base.mesh = base_mesh
+			base.position = Vector3(side * 5.55, 0.17, depth)
+			base.material_override = worn_stone
+			parent.add_child(base)
+			var capital := MeshInstance3D.new()
+			var cap_mesh := BoxMesh.new()
+			cap_mesh.size = Vector3(1.05, 0.32, 1.05)
+			capital.mesh = cap_mesh
+			capital.position = Vector3(side * 5.55, height + 0.08, depth)
+			capital.material_override = worn_stone
+			parent.add_child(capital)
+			if rng.randf() < 0.7:
+				var flame := MeshInstance3D.new()
+				var flame_mesh := SphereMesh.new()
+				flame_mesh.radius = 0.17
+				flame_mesh.height = 0.34
+				flame.mesh = flame_mesh
+				flame.position = Vector3(side * 5.55, height + 0.38, depth)
+				flame.material_override = ember
+				parent.add_child(flame)
+		var rubble := MeshInstance3D.new()
+		var rubble_mesh := BoxMesh.new()
+		rubble_mesh.size = Vector3(rng.randf_range(0.8, 1.5), rng.randf_range(0.35, 0.8), 0.75)
+		rubble.mesh = rubble_mesh
+		rubble.position = Vector3(side * rng.randf_range(4.8, 5.5), 0.18, rng.randf_range(-25.0, -8.0))
+		rubble.rotation.z = rng.randf_range(-0.25, 0.25)
+		rubble.material_override = worn_stone
+		parent.add_child(rubble)
 
 func _box(parent: Node3D, pos: Vector3, size: Vector3, color: Color, solid := false) -> void:
 	var mesh_node := MeshInstance3D.new()
