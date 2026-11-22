@@ -163,6 +163,7 @@ func _spawn_segment(z: float) -> void:
 		var pz := -7.0 - float(row) * 8.0
 		if rng.randf() < 0.55:
 			var enemy := EnemyScript.new()
+			enemy.configure(rng.randi_range(0, 2))
 			enemy.position = Vector3(float(lane - 1) * LANE_WIDTH, 0, pz)
 			segment.add_child(enemy)
 		else:
