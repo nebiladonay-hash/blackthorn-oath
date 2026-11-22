@@ -16,10 +16,10 @@ A phone-first, 3D dark-fantasy endless runner prototype built with **Godot 4**.
 - Swipe left/right: change lane.
 - Swipe up/down: jump/slide.
 - On-screen buttons: lane movement, jump, attack.
-- Keyboard: A/D or arrow keys, Space, S, F.
+- Keyboard: A/D or left/right arrows, Space/up arrow to jump, S/down arrow to slide, F to attack.
 
 ## Build
-Open the repository root in Godot 4.4.x. Install matching Godot export templates and Android SDK/JDK before exporting with the **Android** preset. GitHub Actions includes a headless validation workflow and a manually triggered Android debug build.
+Open the repository root in Godot 4.4.x. Install matching Godot export templates and Android SDK/JDK before exporting with the **Android** preset. GitHub Actions includes strict headless validation (script parse/runtime errors fail the job) and a cloud Android debug APK export workflow.
 
 ## Status
 Early greybox prototype. It has not yet passed an engine runtime test or Android device QA. Character art, animation, audio, persistence, progression, monetization, and production optimization remain future work.
