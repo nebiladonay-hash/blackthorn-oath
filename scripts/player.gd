@@ -16,7 +16,7 @@ var slide_timer := 0.0
 var hit_shape: CollisionShape3D
 var visual_body: MeshInstance3D
 var standing_height := 1.7
-var sliding_height := 0.82
+var sliding_height := 0.9
 
 func _ready() -> void:
 	add_to_group("player")
