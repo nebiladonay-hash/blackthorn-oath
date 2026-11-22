@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f0e8dc"/>
+      <stop offset=".48" stop-color="#8c929d"/>
+      <stop offset="1" stop-color="#343743"/>
+    </linearGradient>
+    <linearGradient id="bronze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9a45d"/>
+      <stop offset="1" stop-color="#704124"/>
+    </linearGradient>
+    <radialGradient id="ember">
+      <stop offset="0" stop-color="#ffae65"/>
+      <stop offset=".5" stop-color="#bd392b"/>
+      <stop offset="1" stop-color="#4a1119"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="#0b0910"/>
+  <rect x="22" y="22" width="468" height="468" rx="100" fill="none" stroke="#4d3c37" stroke-width="5"/>
+  <circle cx="256" cy="256" r="188" fill="none" stroke="#201820" stroke-width="2"/>
+  <g fill="none" stroke="#71302c" stroke-width="17" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M155 398 C102 339 94 270 116 210 C130 169 153 139 189 111"/>
+    <path d="M357 398 C410 339 418 270 396 210 C382 169 359 139 323 111"/>
+  </g>
+  <g fill="none" stroke="#bd5541" stroke-width="8" stroke-linecap="round">
+    <path d="M145 351 L105 342 M126 297 L84 282 M121 245 L82 235 M140 190 L111 166 M169 145 L153 109"/>
+    <path d="M367 351 L407 342 M386 297 L428 282 M391 245 L430 235 M372 190 L401 166 M343 145 L359 109"/>
+  </g>
+  <g fill="#9d4737">
+    <path d="M105 342 L86 323 L93 350 Z"/><path d="M84 282 L62 265 L72 296 Z"/>
+    <path d="M82 235 L58 220 L72 248 Z"/><path d="M111 166 L89 145 L104 178 Z"/>
+    <path d="M153 109 L139 83 L161 103 Z"/>
+    <path d="M407 342 L426 323 L419 350 Z"/><path d="M428 282 L450 265 L440 296 Z"/>
+    <path d="M430 235 L454 220 L440 248 Z"/><path d="M401 166 L423 145 L408 178 Z"/>
+    <path d="M359 109 L373 83 L351 103 Z"/>
+  </g>
+  <path d="M256 67 L302 230 L256 298 L210 230 Z" fill="url(#steel)" stroke="#e3d1b6" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M256 95 L256 273" stroke="#f5e5d4" stroke-opacity=".7" stroke-width="5"/>
+  <path d="M190 258 L322 258 L294 292 L218 292 Z" fill="url(#bronze)" stroke="#3c2419" stroke-width="6" stroke-linejoin="round"/>
+  <rect x="239" y="286" width="34" height="93" rx="8" fill="#37251f" stroke="#a16a3e" stroke-width="6"/>
+  <path d="M239 313 L273 339 M239 339 L273 365" stroke="#c18a52" stroke-width="5" opacity=".8"/>
+  <circle cx="256" cy="393" r="23" fill="url(#bronze)" stroke="#4a2d20" stroke-width="6"/>
+  <circle cx="256" cy="270" r="17" fill="url(#ember)" stroke="#f0a15d" stroke-width="4"/>
+  <path d="M155 398 C183 420 213 432 256 432 C299 432 329 420 357 398" fill="none" stroke="#71302c" stroke-width="11" stroke-linecap="round"/>
+</svg>
