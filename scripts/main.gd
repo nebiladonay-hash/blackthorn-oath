@@ -190,7 +190,7 @@ func _spawn_segment(z: float) -> void:
 			if not overhead:
 				for spike_index in range(3):
 					var spike := MeshInstance3D.new()
-					var spike_mesh := ConeMesh.new()
+					var spike_mesh := CylinderMesh.new()
 					spike_mesh.bottom_radius = 0.24
 					spike_mesh.top_radius = 0.015
 					spike_mesh.height = 0.62
