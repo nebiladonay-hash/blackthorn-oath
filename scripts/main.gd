@@ -130,7 +130,7 @@ func _make_ui() -> void:
 	message_label.size = Vector2(440, 140)
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	message_label.add_theme_font_size_override("font_size", 28)
-	message_label.text = "BLACKTHORN OATH\nSwipe to move • swipe up to jump\nF / ATTACK to strike"
+	message_label.text = "BLACKTHORN OATH\nSwipe left/right to change lanes • up to jump • down to slide\nAttack enemies and collect glowing relics"
 	root.add_child(message_label)
 	get_tree().create_timer(4.0).timeout.connect(func(): message_label.visible = false)
 	_button(root, "◀", Vector2(24, -95), Vector2(72, 70), func(): player.move_lane(-1), Control.PRESET_BOTTOM_LEFT)
@@ -169,11 +169,14 @@ func _spawn_segment(z: float) -> void:
 			var hazard := HazardScript.new()
 			hazard.position = Vector3(float(lane - 1) * LANE_WIDTH, 0.55, pz)
 			var shape_node := CollisionShape3D.new()
+			var overhead := rng.randf() < 0.5
+			var obstacle_size := Vector3(1.5, 0.45, 1.5) if overhead else Vector3(1.5, 1.1, 1.5)
+			hazard.position.y = 1.45 if overhead else 0.55
 			var shape := BoxShape3D.new()
-			shape.size = Vector3(1.5, 1.1, 1.5)
+			shape.size = obstacle_size
 			shape_node.shape = shape
 			hazard.add_child(shape_node)
-			_box(hazard, Vector3.ZERO, Vector3(1.5, 1.1, 1.5), Color(0.2, 0.07, 0.05))
+			_box(hazard, Vector3.ZERO, obstacle_size, Color(0.2, 0.07, 0.05))
 			segment.add_child(hazard)
 		var relic_lane := (lane + 1 + (row % 2)) % 3
 		var relic := RelicScript.new()
