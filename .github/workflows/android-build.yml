@@ -1,0 +1,26 @@
+name: Build BLACKTHORN OATH Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [ 'prototype-*' ]
+
+jobs:
+  android-debug:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import project
+        run: godot --headless --editor --path . --quit
+      - name: Export Android debug APK
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BLACKTHORN-OATH-Android-debug
+          path: build/BLACKTHORN-OATH-debug.apk
+          if-no-files-found: error
