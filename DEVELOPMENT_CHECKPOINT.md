@@ -47,7 +47,7 @@ A new Android APK for the exact checkpoint revision has **not yet been confirmed
 
 1. Retrieve and inspect all four visual-review screenshots. Judge composition, scale, lighting, clipping, readability and whether the Warden reveal is actually legible. Fix what the images demonstrate; do not assume it looks right because the workflow passed.
 2. If a screenshot shows camera, shader, geometry or layout problems, correct those before creating another APK.
-3. Check the Android workflow for this exact revision. If missing or failed, diagnose and rerun. Export the current version as configured in `export_presets.cfg`.
+3. Download Android artifact ID `14770806028` from run #47, inspect the APK archive and signature, and confirm its package/version metadata matches the checkpoint revision. Rebuild only if the artifact is invalid or mismatched.
 4. Inspect the actual APK package and signature; provide a verified link only for the build matching the checkpoint revision.
 5. Ask the developer to test on the Android phone and share screenshots/video from the real device.
 6. After confirming the visual direction, prioritize authored-quality environment assets, rigged/animated character and enemy models, impact animation, sound effects, boss encounter and a compelling first playable minute.
