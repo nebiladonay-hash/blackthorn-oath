@@ -14,6 +14,7 @@ var next_z := 0.0
 var distance := 0.0
 var kills := 0
 var relics := 0
+var relic_bank := 0
 var best_distance := 0
 var save_data := ConfigFile.new()
 var run_over := false
@@ -23,6 +24,7 @@ var relic_label: Label
 var best_label: Label
 var message_label: Label
 var ui_layer: CanvasLayer
+var pause_button: Button
 var started_at := 0.0
 
 func _ready() -> void:
@@ -49,7 +51,7 @@ func _process(delta: float) -> void:
 	distance = maxf(distance, -player.global_position.z)
 	player.forward_speed = minf(12.0 + (Time.get_ticks_msec() / 1000.0 - started_at) * 0.12, 19.0)
 	score_label.text = "DISTANCE  %05d m     KILLS  %02d" % [int(distance), kills]
-	relic_label.text = "RELICS  %03d" % relics
+	relic_label.text = "RELICS  %03d   BANK  %03d" % [relics, relic_bank]
 	best_label.text = "BEST  %05d m" % best_distance
 	camera.global_position = camera.global_position.lerp(player.global_position + Vector3(0, 5.1, 9.5), delta * 5.0)
 	camera.look_at(player.global_position + Vector3(0, 1, -5.5), Vector3.UP)
@@ -104,6 +106,7 @@ func _make_ui() -> void:
 	ui_layer = CanvasLayer.new()
 	add_child(ui_layer)
 	var root := Control.new()
+	root.process_mode = Node.PROCESS_MODE_ALWAYS
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ui_layer.add_child(root)
 	score_label = Label.new()
@@ -138,15 +141,18 @@ func _make_ui() -> void:
 	_button(root, "SLIDE", Vector2(-275, -95), Vector2(82, 70), func(): player.slide(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "JUMP", Vector2(-185, -95), Vector2(82, 70), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT)
 	_button(root, "ATTACK", Vector2(-95, -95), Vector2(92, 70), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT)
+	pause_button = _button(root, "Ⅱ", Vector2(-88, 18), Vector2(66, 56), func(): _toggle_pause(), Control.PRESET_TOP_RIGHT)
 
-func _button(root: Control, caption: String, offset: Vector2, dimensions: Vector2, action: Callable, preset: int) -> void:
+func _button(root: Control, caption: String, offset: Vector2, dimensions: Vector2, action: Callable, preset: int) -> Button:
 	var b := Button.new()
 	b.text = caption
 	b.set_anchors_preset(preset)
 	b.position = offset
 	b.size = dimensions
+	b.process_mode = Node.PROCESS_MODE_ALWAYS
 	b.pressed.connect(action)
 	root.add_child(b)
+	return b
 
 func _spawn_segment(z: float) -> void:
 	var segment := Node3D.new()
@@ -279,12 +285,28 @@ func add_kill() -> void:
 
 func add_relic() -> void:
 	relics += 1
-	relic_label.text = "RELICS  %03d" % relics
+	relic_bank += 1
+	relic_label.text = "RELICS  %03d   BANK  %03d" % [relics, relic_bank]
+	_save_progress()
 
 func _load_progress() -> void:
 	if save_data.load("user://blackthorn_oath.cfg") == OK:
 		best_distance = int(save_data.get_value("progress", "best_distance", 0))
+		relic_bank = int(save_data.get_value("progress", "relic_bank", 0))
 
 func _save_progress() -> void:
 	save_data.set_value("progress", "best_distance", best_distance)
+	save_data.set_value("progress", "relic_bank", relic_bank)
 	save_data.save("user://blackthorn_oath.cfg")
+
+func _toggle_pause() -> void:
+	if run_over:
+		return
+	get_tree().paused = not get_tree().paused
+	if get_tree().paused:
+		message_label.text = "PAUSED\nTap RESUME to return to the run"
+		message_label.visible = true
+		pause_button.text = "RESUME"
+	else:
+		message_label.visible = false
+		pause_button.text = "Ⅱ"
