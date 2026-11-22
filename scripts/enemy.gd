@@ -42,7 +42,7 @@ func _process(delta: float) -> void:
 		if hit_flash == 0.0 and is_instance_valid(body_visual):
 			(body_visual.material_override as StandardMaterial3D).albedo_color = base_color
 	if is_instance_valid(player):
-		look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z), Vector3.UP)
+		look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z - 0.01), Vector3.UP)
 	var distance_z := absf(global_position.z - player.global_position.z)
 	var distance_x := absf(global_position.x - player.global_position.x)
 	if distance_z < 1.65 and distance_x < 1.0 and attack_timer <= 0.0:
