@@ -66,16 +66,24 @@ jobs:
           test -s "$TEMPLATE_DIR/android_release.apk"
           godot --version
 
+      - name: Restore stable debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: blackthorn-oath-debug-keystore-v1
+
       - name: Configure Godot Android editor settings
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.android" "$HOME/.config/godot"
-          keytool -genkeypair -v \
-            -keystore "$HOME/.android/debug.keystore" \
-            -storepass android -alias androiddebugkey -keypass android \
-            -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+          if [ ! -s "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android -alias androiddebugkey -keypass android \
+              -dname "CN=Blackthorn Oath Debug,O=Development,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
           cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
