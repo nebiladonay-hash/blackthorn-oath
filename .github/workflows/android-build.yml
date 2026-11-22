@@ -15,73 +15,95 @@ concurrency:
 
 jobs:
   android-debug:
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    container:
-      image: barichello/godot-ci:4.4.1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
-      - name: Prepare Godot Android export environment
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android export requirements
         shell: bash
         run: |
           set -euo pipefail
-          GODOT_VERSION="$(godot --version | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
-          TEMPLATE_VERSION="${GODOT_VERSION}.stable"
-          echo "Godot version: $GODOT_VERSION"
-          echo "Runner HOME: $HOME"
-
-          # The container image installs templates and Android tooling under /root.
-          # GitHub Actions provides a different HOME to workflow steps.
-          TEMPLATE_SOURCE="$(find /root/.local/share/godot -type f -name android_debug.apk -print -quit 2>/dev/null || true)"
-          if [ -z "$TEMPLATE_SOURCE" ]; then
-            echo "::error::Godot Android export templates were not found in the CI image."
-            find /root/.local/share/godot -maxdepth 5 -type f | head -80 || true
-            exit 1
-          fi
-          TEMPLATE_SOURCE_DIR="$(dirname "$TEMPLATE_SOURCE")"
-          TEMPLATE_DEST="$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
-          mkdir -p "$TEMPLATE_DEST"
-          cp -a "$TEMPLATE_SOURCE_DIR/." "$TEMPLATE_DEST/"
-          test -s "$TEMPLATE_DEST/android_debug.apk"
-          test -s "$TEMPLATE_DEST/android_release.apk"
-
-          test -x /usr/lib/jvm/java-17-openjdk-amd64/bin/java
-          test -d /usr/lib/android-sdk/platform-tools
-          test -f /root/debug.keystore
-
-          # Godot 4.4 Android export expects the Android 34 toolchain.
-          export ANDROID_HOME="/usr/lib/android-sdk"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          export PATH="$ANDROID_HOME/cmdline-tools/cmdline-tools/bin:$ANDROID_HOME/platform-tools:$PATH"
           yes | sdkmanager --sdk_root="$ANDROID_HOME" --licenses >/dev/null || true
-          sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;34.0.0" "platforms;android-34"
+          sdkmanager --sdk_root="$ANDROID_HOME" --install \
+            "platform-tools" \
+            "build-tools;34.0.0" \
+            "platforms;android-34" \
+            "cmdline-tools;latest" \
+            "cmake;3.10.2.4988404" \
+            "ndk;23.2.8568313"
           test -d "$ANDROID_HOME/platforms/android-34"
           test -d "$ANDROID_HOME/build-tools/34.0.0"
 
-          mkdir -p "$HOME/.config/godot"
-          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<'SETTINGS'
+      - name: Install Godot 4.4.1 and matching Android export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT_VERSION="4.4.1"
+          GODOT_RELEASE="stable"
+          GODOT_BASE="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-${GODOT_RELEASE}"
+          curl --fail --location --retry 3 "$GODOT_BASE/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64.zip" -o /tmp/godot.zip
+          curl --fail --location --retry 3 "$GODOT_BASE/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_export_templates.tpz" -o /tmp/godot_templates.tpz
+          mkdir -p /tmp/godot-bin /tmp/godot-template-unpack
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          sudo install -m 0755 "/tmp/godot-bin/Godot_v${GODOT_VERSION}-${GODOT_RELEASE}_linux.x86_64" /usr/local/bin/godot
+          unzip -q /tmp/godot_templates.tpz -d /tmp/godot-template-unpack
+          TEMPLATE_DIR="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.${GODOT_RELEASE}"
+          mkdir -p "$TEMPLATE_DIR"
+          cp -a /tmp/godot-template-unpack/templates/. "$TEMPLATE_DIR/"
+          test -s "$TEMPLATE_DIR/android_debug.apk"
+          test -s "$TEMPLATE_DIR/android_release.apk"
+          godot --version
+
+      - name: Configure Godot Android editor settings
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android" "$HOME/.config/godot"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android -alias androiddebugkey -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -keyalg RSA -keysize 2048 -validity 10000
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
-          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
-          export/android/android_sdk_path = "/usr/lib/android-sdk"
-          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/debug_keystore = "$HOME/.android/debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           export/android/force_system_user = false
           export/android/timestamping_authority_url = ""
           export/android/shutdown_adb_on_exit = true
-          SETTINGS
+          EOF
 
-          godot --headless --editor --path . --quit
+      - name: Import project and reject script errors
+        shell: bash
+        run: |
+          set -o pipefail
+          godot --headless --editor --path . --quit 2>&1 | tee /tmp/godot-import.log
+          if grep -E "SCRIPT ERROR:|Parse Error:|Failed to load script" /tmp/godot-import.log; then
+            echo "::error::Godot reported a project script error."
+            exit 1
+          fi
 
       - name: Export Android debug APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p build
-          godot --headless --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk
+          godot --headless --verbose --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk 2>&1 | tee /tmp/godot-export.log
           test -s build/BLACKTHORN-OATH-debug.apk
           unzip -t build/BLACKTHORN-OATH-debug.apk
 
