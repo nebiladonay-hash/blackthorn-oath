@@ -62,10 +62,12 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= 24.0 * delta
 	move_and_slide()
-	if invulnerability > 0.0:
-		visual_body.visible = int(Time.get_ticks_msec() / 90) % 2 == 0
-	else:
-		visual_body.visible = true
+	var character_visible := invulnerability <= 0.0 or int(Time.get_ticks_msec() / 90) % 2 == 0
+	visual_body.visible = character_visible
+	for child in get_children():
+		if child is MeshInstance3D and child != visual_body:
+			child.visible = character_visible and slide_timer <= 0.0
+	sword_pivot.visible = character_visible and slide_timer <= 0.0
 
 func _build_character() -> void:
 	armor_material = StandardMaterial3D.new()
