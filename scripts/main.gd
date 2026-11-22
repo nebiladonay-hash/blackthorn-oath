@@ -1,0 +1,191 @@
+extends Node3D
+
+const PlayerScript = preload("res://scripts/player.gd")
+const EnemyScript = preload("res://scripts/enemy.gd")
+const HazardScript = preload("res://scripts/hazard.gd")
+const LANE_WIDTH := 2.6
+const SEGMENT_LENGTH := 28.0
+
+var player: BlackthornOathPlayer
+var camera: Camera3D
+var segments: Array[Node3D] = []
+var next_z := 0.0
+var distance := 0.0
+var kills := 0
+var run_over := false
+var score_label: Label
+var health_label: Label
+var message_label: Label
+var ui_layer: CanvasLayer
+var started_at := 0.0
+
+func _ready() -> void:
+	_make_environment()
+	player = PlayerScript.new()
+	player.position = Vector3(0, 0.1, 2)
+	add_child(player)
+	player.health_changed.connect(_on_health)
+	player.died.connect(_on_death)
+	camera = Camera3D.new()
+	camera.current = true
+	camera.fov = 72
+	camera.position = Vector3(0, 5.1, 11.5)
+	add_child(camera)
+	_make_ui()
+	for i in range(5):
+		_spawn_segment(-float(i) * SEGMENT_LENGTH)
+	started_at = Time.get_ticks_msec() / 1000.0
+
+func _process(delta: float) -> void:
+	if run_over:
+		return
+	distance = maxf(distance, -player.global_position.z)
+	player.forward_speed = minf(12.0 + (Time.get_ticks_msec() / 1000.0 - started_at) * 0.12, 19.0)
+	score_label.text = "DISTANCE  %05d m     KILLS  %02d" % [int(distance), kills]
+	camera.global_position = camera.global_position.lerp(player.global_position + Vector3(0, 5.1, 9.5), delta * 5.0)
+	camera.look_at(player.global_position + Vector3(0, 1, -5.5), Vector3.UP)
+	if player.global_position.z < next_z + SEGMENT_LENGTH * 2:
+		_spawn_segment(next_z)
+	for i in range(segments.size() - 1, -1, -1):
+		if not is_instance_valid(segments[i]):
+			segments.remove_at(i)
+		elif segments[i].global_position.z > player.global_position.z + SEGMENT_LENGTH * 1.8:
+			segments[i].queue_free()
+			segments.remove_at(i)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch and event.pressed:
+		_touch_origin = event.position
+	elif event is InputEventScreenTouch and not event.pressed:
+		var delta: Vector2 = event.position - _touch_origin
+		if delta.length() > 40 and not run_over:
+			if absf(delta.x) > absf(delta.y):
+				player.move_lane(1 if delta.x > 0 else -1)
+			elif delta.y < 0:
+				player.jump()
+			else:
+				player.slide()
+
+var _touch_origin := Vector2.ZERO
+
+func _make_environment() -> void:
+	var world := WorldEnvironment.new()
+	var env := Environment.new()
+	env.background_mode = Environment.BG_SKY
+	var sky := Sky.new()
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color(0.012, 0.008, 0.022)
+	sky_mat.sky_horizon_color = Color(0.11, 0.025, 0.035)
+	sky.sky_material = sky_mat
+	env.sky = sky
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.22, 0.19, 0.28)
+	env.fog_enabled = true
+	env.fog_light_color = Color(0.08, 0.035, 0.055)
+	env.fog_density = 0.012
+	world.environment = env
+	add_child(world)
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-48, -28, 0)
+	light.light_color = Color(0.46, 0.48, 0.68)
+	light.shadow_enabled = true
+	add_child(light)
+
+func _make_ui() -> void:
+	ui_layer = CanvasLayer.new()
+	add_child(ui_layer)
+	var root := Control.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui_layer.add_child(root)
+	score_label = Label.new()
+	score_label.position = Vector2(22, 18)
+	score_label.add_theme_font_size_override("font_size", 21)
+	root.add_child(score_label)
+	health_label = Label.new()
+	health_label.position = Vector2(22, 50)
+	health_label.text = "VITALITY  ♥ ♥ ♥"
+	health_label.add_theme_color_override("font_color", Color(0.8, 0.18, 0.14))
+	root.add_child(health_label)
+	message_label = Label.new()
+	message_label.set_anchors_preset(Control.PRESET_CENTER)
+	message_label.position = Vector2(-220, -70)
+	message_label.size = Vector2(440, 140)
+	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message_label.add_theme_font_size_override("font_size", 28)
+	message_label.text = "BLACKTHORN OATH\nSwipe to move • swipe up to jump\nF / ATTACK to strike"
+	root.add_child(message_label)
+	get_tree().create_timer(4.0).timeout.connect(func(): message_label.visible = false)
+	_button(root, "◀", Vector2(24, -95), Vector2(72, 70), func(): player.move_lane(-1), Control.PRESET_BOTTOM_LEFT)
+	_button(root, "▶", Vector2(105, -95), Vector2(72, 70), func(): player.move_lane(1), Control.PRESET_BOTTOM_LEFT)
+	_button(root, "JUMP", Vector2(-185, -95), Vector2(82, 70), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT)
+	_button(root, "ATTACK", Vector2(-95, -95), Vector2(92, 70), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT)
+
+func _button(root: Control, caption: String, offset: Vector2, dimensions: Vector2, action: Callable, preset: int) -> void:
+	var b := Button.new()
+	b.text = caption
+	b.set_anchors_preset(preset)
+	b.position = offset
+	b.size = dimensions
+	b.pressed.connect(action)
+	root.add_child(b)
+
+func _spawn_segment(z: float) -> void:
+	var segment := Node3D.new()
+	segment.position.z = z
+	add_child(segment)
+	segments.append(segment)
+	_box(segment, Vector3(0, -0.35, -14), Vector3(9, 0.7, SEGMENT_LENGTH), Color(0.10, 0.09, 0.11), true)
+	for side in [-1, 1]:
+		_box(segment, Vector3(float(side) * 4.7, 0.2, -14), Vector3(0.4, 1.1, SEGMENT_LENGTH), Color(0.045, 0.035, 0.05), true)
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for row in range(3):
+		var lane := rng.randi_range(0, 2)
+		var pz := -7.0 - float(row) * 8.0
+		if rng.randf() < 0.55:
+			var enemy := EnemyScript.new()
+			enemy.position = Vector3(float(lane - 1) * LANE_WIDTH, 0, pz)
+			segment.add_child(enemy)
+		else:
+			var hazard := HazardScript.new()
+			hazard.position = Vector3(float(lane - 1) * LANE_WIDTH, 0.55, pz)
+			var shape_node := CollisionShape3D.new()
+			var shape := BoxShape3D.new()
+			shape.size = Vector3(1.5, 1.1, 1.5)
+			shape_node.shape = shape
+			hazard.add_child(shape_node)
+			_box(hazard, Vector3.ZERO, Vector3(1.5, 1.1, 1.5), Color(0.2, 0.07, 0.05))
+			segment.add_child(hazard)
+	next_z = z - SEGMENT_LENGTH
+
+func _box(parent: Node3D, pos: Vector3, size: Vector3, color: Color, solid := false) -> void:
+	var mesh_node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	mesh_node.mesh = mesh
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	mesh_node.material_override = material
+	mesh_node.position = pos
+	parent.add_child(mesh_node)
+	if solid:
+		var body := StaticBody3D.new()
+		body.position = pos
+		var collision := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = size
+		collision.shape = box
+		body.add_child(collision)
+		parent.add_child(body)
+
+func _on_health(value: int) -> void:
+	health_label.text = "VITALITY  " + "♥ ".repeat(value) + "♡ ".repeat(3 - value)
+
+func _on_death() -> void:
+	run_over = true
+	message_label.visible = true
+	message_label.text = "YOU HAVE FALLEN\nDISTANCE %d m • KILLS %d" % [int(distance), kills]
+	_button(ui_layer.get_child(0), "RESTART", Vector2(-90, 90), Vector2(180, 60), func(): get_tree().reload_current_scene(), Control.PRESET_CENTER)
+
+func add_kill() -> void:
+	kills += 1
