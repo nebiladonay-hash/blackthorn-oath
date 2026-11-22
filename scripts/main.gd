@@ -67,7 +67,7 @@ func _input(event: InputEvent) -> void:
 			touch_start = event.position
 			touch_tracking = true
 		elif touch_tracking:
-			var swipe := event.position - touch_start
+			var swipe: Vector2 = (event as InputEventScreenTouch).position - touch_start
 			touch_tracking = false
 			if swipe.length() >= 38.0:
 				if absf(swipe.x) > absf(swipe.y):
@@ -396,7 +396,7 @@ func _add_arch_and_ruins(parent: Node3D, rng: RandomNumberGenerator) -> void:
 
 	# A gate arch gives the road a visible destination and scale.
 	for side in [-1.0, 1.0]:
-		var x := side * 5.1
+		var x: float = float(side) * 5.1
 		_box(parent, Vector3(x, 2.15, -13.8), Vector3(0.95, 4.3, 1.0), old_stone)
 		_box(parent, Vector3(x, 4.35, -13.8), Vector3(1.35, 0.45, 1.35), cut_stone)
 		_box(parent, Vector3(x, 0.22, -13.8), Vector3(1.35, 0.44, 1.35), cut_stone)
