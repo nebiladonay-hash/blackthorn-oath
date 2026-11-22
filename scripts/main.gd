@@ -66,6 +66,10 @@ var gold_material: StandardMaterial3D
 var ember_material: StandardMaterial3D
 var glass_material: StandardMaterial3D
 var banner_shader: Shader
+var cathedral_gate_left: Node3D
+var cathedral_gate_right: Node3D
+var portal_light: OmniLight3D
+var gate_guardian: Node3D
 
 func _ready() -> void:
 	_load_progress()
@@ -283,14 +287,28 @@ func _build_cathedral_landmark() -> void:
 		_add_buttress(facade, side * 8.9, 0.0, 0.0, 16.0)
 		_add_buttress(facade, side * 8.9, 0.0, -1.8, 16.0)
 
-	# Grand central entrance with pointed arch, iron doors and layered archivolts.
+	# Grand central entrance: two independently hinged iron-bound gates.
 	_add_front_gothic_arch(facade, Vector3(0, 1.6, -2.42), 7.2, 13.8, 0.8, worn_stone_material)
-	_box(facade, Vector3(0, 6.4, -2.49), Vector3(5.9, 9.6, 0.18), _standard_material(Color(0.045, 0.027, 0.026), 0.44, 0.64))
-	for door_x in [-2.75, -1.85, -0.95, 0.0, 0.95, 1.85, 2.75]:
-		_box(facade, Vector3(door_x, 6.0, -2.61), Vector3(0.06, 8.8, 0.1), gold_material)
-	_box(facade, Vector3(0, 4.8, -2.66), Vector3(6.1, 0.12, 0.1), gold_material)
-	_box(facade, Vector3(0, 10.2, -2.68), Vector3(5.7, 0.12, 0.1), gold_material)
+	var gate_wood := _standard_material(Color(0.038, 0.018, 0.024), 0.36, 0.58)
+	cathedral_gate_left = Node3D.new()
+	cathedral_gate_left.position = Vector3(-3.0, 0.0, -2.65)
+	facade.add_child(cathedral_gate_left)
+	cathedral_gate_right = Node3D.new()
+	cathedral_gate_right.position = Vector3(3.0, 0.0, -2.65)
+	facade.add_child(cathedral_gate_right)
+	for gate_side in range(2):
+		var gate: Node3D = cathedral_gate_left if gate_side == 0 else cathedral_gate_right
+		var panel_center: float = 1.5 if gate_side == 0 else -1.5
+		_box(gate, Vector3(panel_center, 6.65, 0.0), Vector3(3.0, 13.3, 0.3), gate_wood)
+		for rail_index in range(8):
+			var rail_y: float = 0.9 + float(rail_index) * 1.65
+			_box(gate, Vector3(panel_center, rail_y, -0.19), Vector3(2.85, 0.11, 0.12), gold_material)
+		for rib_index in range(4):
+			var rib_x: float = panel_center - 1.05 + float(rib_index) * 0.7
+			_box(gate, Vector3(rib_x, 6.7, -0.2), Vector3(0.12, 12.8, 0.12), metal_material)
+		_box(gate, Vector3(panel_center, 6.7, -0.28), Vector3(0.5, 1.8, 0.12), gold_material)
 	_add_front_gothic_arch(facade, Vector3(0, 10.9, -2.7), 5.4, 6.6, 0.25, gold_material)
+	_add_gate_guardian(facade)
 
 	# Rose window and stained-glass halo.
 	var rose := MeshInstance3D.new()
@@ -340,13 +358,49 @@ func _build_cathedral_landmark() -> void:
 		var step_depth: float = 1.0 + float(step_index) * 0.18
 		_box(facade, Vector3(0, 0.3 + float(step_index) * 0.13, 1.5 + float(step_index) * 1.1), Vector3(step_width, 0.42, step_depth), worn_stone_material, true)
 
-	# Low orange firelight shines from deep inside the sealed doorway.
-	var portal_light := OmniLight3D.new()
-	portal_light.position = Vector3(0, 5.0, -3.1)
-	portal_light.light_color = Color(0.75, 0.065, 0.025)
-	portal_light.light_energy = 2.0
-	portal_light.omni_range = 16.0
+	# A dim pulse waits behind the gate until the cinematic reveal.
+	portal_light = OmniLight3D.new()
+	portal_light.position = Vector3(0, 5.0, -6.6)
+	portal_light.light_color = Color(0.82, 0.045, 0.018)
+	portal_light.light_energy = 0.28
+	portal_light.omni_range = 23.0
 	facade.add_child(portal_light)
+
+func _add_gate_guardian(parent: Node3D) -> void:
+	gate_guardian = Node3D.new()
+	gate_guardian.name = "TheBellWarden"
+	gate_guardian.position = Vector3(0, 0, -8.4)
+	gate_guardian.visible = false
+	parent.add_child(gate_guardian)
+	var black_iron := _standard_material(Color(0.022, 0.025, 0.035), 0.94, 0.22)
+	var dark_bone := _standard_material(Color(0.12, 0.095, 0.095), 0.22, 0.84)
+	var blood_glow := _standard_material(Color(0.74, 0.018, 0.012), 0.1, 0.18, Color(1.0, 0.008, 0.002), 4.5)
+	_box(gate_guardian, Vector3(0, 6.1, 0), Vector3(2.8, 4.2, 1.4), black_iron)
+	_box(gate_guardian, Vector3(0, 7.2, -0.1), Vector3(3.4, 1.1, 1.8), dark_bone)
+	_sphere(gate_guardian, Vector3(0, 8.6, -0.05), Vector3(1.4, 1.55, 1.05), black_iron)
+	_box(gate_guardian, Vector3(0, 8.38, -0.55), Vector3(0.9, 0.22, 0.12), dark_bone)
+	_sphere(gate_guardian, Vector3(-0.3, 8.5, -0.58), Vector3(0.18, 0.12, 0.08), blood_glow)
+	_sphere(gate_guardian, Vector3(0.3, 8.5, -0.58), Vector3(0.18, 0.12, 0.08), blood_glow)
+	for side_index in range(2):
+		var side: float = -1.0 if side_index == 0 else 1.0
+		_box(gate_guardian, Vector3(side * 1.9, 6.25, 0), Vector3(1.05, 3.7, 1.0), black_iron)
+		_capsule(gate_guardian, Vector3(side * 2.0, 4.3, 0), 0.38, 1.5, dark_bone)
+		_box(gate_guardian, Vector3(side * 0.72, 3.1, 0.0), Vector3(0.85, 3.4, 1.0), black_iron)
+		_box(gate_guardian, Vector3(side * 0.8, 1.1, -0.2), Vector3(0.9, 1.8, 1.25), dark_bone)
+		# Crown-like broken horns silhouette the Warden against the portal.
+		var horn := MeshInstance3D.new()
+		var horn_mesh := CylinderMesh.new()
+		horn_mesh.top_radius = 0.025
+		horn_mesh.bottom_radius = 0.28
+		horn_mesh.height = 2.0
+		horn_mesh.radial_segments = 7
+		horn.mesh = horn_mesh
+		horn.position = Vector3(side * 0.58, 9.9, 0.05)
+		horn.rotation.z = side * deg_to_rad(24.0)
+		horn.material_override = black_iron
+		gate_guardian.add_child(horn)
+	_box(gate_guardian, Vector3(1.7, 4.8, -0.35), Vector3(0.18, 6.8, 0.18), metal_material)
+	_box(gate_guardian, Vector3(1.7, 7.2, -0.35), Vector3(1.6, 0.42, 0.3), black_iron)
 
 func _add_cathedral_tower(parent: Node3D, x: float, base_y: float, height: float, width: float) -> void:
 	var tower := Node3D.new()
@@ -659,7 +713,16 @@ func _update_cinematic(delta: float) -> void:
 		var amount: float = _ease((t - 4.2) / 3.8)
 		camera.global_position = Vector3(11.0, 11.5, 4.0).lerp(Vector3(-9.0, 7.0, -55.0), amount)
 		camera.look_at(Vector3(0, 12.0, -112.0), Vector3.UP)
-		_set_cinematic_copy("THEN THE BELLS BEGAN TO ANSWER THEMSELVES.", "", 0.0)
+		var gate_amount: float = _ease((t - 5.35) / 2.45)
+		cathedral_gate_left.rotation.y = -0.94 * gate_amount
+		cathedral_gate_right.rotation.y = 0.94 * gate_amount
+		gate_guardian.visible = gate_amount > 0.28
+		portal_light.light_energy = 0.28 + gate_amount * 4.4
+		portal_light.light_color = Color(0.82, 0.045, 0.018).lerp(Color(1.0, 0.12, 0.025), gate_amount)
+		var reveal_line: String = "THEN THE BELLS BEGAN TO ANSWER THEMSELVES." if t < 6.4 else "SOMETHING ANSWERED FROM WITHIN."
+		_set_cinematic_copy(reveal_line, "", 0.0)
+		if t > 7.35:
+			camera.global_position += Vector3(sin(t * 68.0) * 0.035, cos(t * 54.0) * 0.022, 0.0)
 	elif t < 11.5:
 		var amount: float = _ease((t - 8.0) / 3.5)
 		camera.global_position = Vector3(-9.0, 7.0, -55.0).lerp(Vector3(3.4, 2.7, 0.2), amount)
@@ -704,6 +767,10 @@ func _skip_intro() -> void:
 	if not intro_active:
 		return
 	intro_elapsed = INTRO_LENGTH
+	cathedral_gate_left.rotation.y = -0.94
+	cathedral_gate_right.rotation.y = 0.94
+	gate_guardian.visible = true
+	portal_light.light_energy = 4.68
 	_finish_intro()
 
 func _start_run() -> void:
