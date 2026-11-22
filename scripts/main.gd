@@ -65,6 +65,8 @@ func _process(delta: float) -> void:
 			segments.remove_at(i)
 
 func _input(event: InputEvent) -> void:
+	if get_tree().paused or run_over:
+		return
 	if event is InputEventScreenTouch and event.pressed:
 		_touch_origin = event.position
 	elif event is InputEventScreenTouch and not event.pressed:
@@ -118,7 +120,7 @@ func _make_ui() -> void:
 	health_label.text = "VITALITY  ♥ ♥ ♥"
 	relic_label = Label.new()
 	relic_label.position = Vector2(22, 80)
-	relic_label.text = "RELICS  000"
+	relic_label.text = "RELICS  000   BANK  %03d" % relic_bank
 	relic_label.add_theme_color_override("font_color", Color(0.95, 0.68, 0.22))
 	root.add_child(relic_label)
 	best_label = Label.new()
