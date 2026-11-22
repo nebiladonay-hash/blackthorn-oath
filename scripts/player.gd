@@ -12,6 +12,7 @@ var health := 3
 var dead := false
 var invulnerability := 0.0
 var attack_cooldown := 0.0
+var slide_timer := 0.0
 
 func _ready() -> void:
 	add_to_group("player")
@@ -39,6 +40,9 @@ func _physics_process(delta: float) -> void:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
 	attack_cooldown = maxf(0.0, attack_cooldown - delta)
+	slide_timer = maxf(0.0, slide_timer - delta)
+	if Input.is_action_just_pressed("slide"):
+		slide()
 	if Input.is_action_just_pressed("lane_left"):
 		move_lane(-1)
 	if Input.is_action_just_pressed("lane_right"):
@@ -61,6 +65,11 @@ func move_lane(direction: int) -> void:
 func jump() -> void:
 	if is_on_floor():
 		velocity.y = jump_velocity
+
+func slide() -> void:
+	if is_on_floor():
+		slide_timer = 0.65
+		velocity.y = -1.0
 
 func attack() -> void:
 	if attack_cooldown > 0.0:
