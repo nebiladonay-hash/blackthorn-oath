@@ -475,22 +475,6 @@ func _on_health_changed(value: int) -> void:
 func _on_player_died() -> void:
 	_show_game_over()
 
-func _show_game_over() -> void:
-	game_over = true
-	game_started = false
-	paused = false
-	get_tree().paused = false
-	best_distance = maxi(best_distance, int(distance))
-	_save_progress()
-	modal_title.text = "OATH BROKEN"
-	modal_body.text = "DISTANCE  %d m     KILLS  %d\nRELICS FOUND  %d\nBEST RUN  %d m" % [int(distance), kills, relics, best_distance]
-	modal_action.text = "RUN AGAIN"
-	for connection in modal_action.pressed.get_connections():
-		modal_action.pressed.disconnect(connection.callable)
-	modal_action.pressed.connect(func(): get_tree().reload_current_scene())
-	modal_panel.show()
-	_update_hud()
-
 func _add_kill() -> void:
 	kills += 1
 
