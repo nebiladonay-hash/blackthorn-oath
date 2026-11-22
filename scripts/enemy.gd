@@ -10,23 +10,25 @@ var attack_interval := 1.35
 var damage := 1
 var player: BlackthornOathPlayer
 var is_dead := false
-var body_visual: MeshInstance3D
+var visual_root: Node3D
+var flash_materials: Array[StandardMaterial3D] = []
+var base_colors: Array[Color] = []
 var hit_flash := 0.0
-var base_color := Color(0.12, 0.09, 0.11)
+var attack_windup := 0.0
+var body_root: Node3D
 
 func configure(kind: int) -> void:
 	archetype = clampi(kind, 0, 2)
 	match archetype:
 		EnemyType.BLOODHOUND:
 			health = 1
-			attack_interval = 0.8
+			attack_interval = 0.85
 		EnemyType.EXECUTIONER:
 			health = 3
-			attack_interval = 1.7
-			damage = 1
+			attack_interval = 1.75
 		_:
 			health = 2
-			attack_interval = 1.35
+			attack_interval = 1.3
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -39,23 +41,30 @@ func _process(delta: float) -> void:
 	attack_timer = maxf(0.0, attack_timer - delta)
 	if hit_flash > 0.0:
 		hit_flash = maxf(0.0, hit_flash - delta)
-		if hit_flash == 0.0 and is_instance_valid(body_visual):
-			(body_visual.material_override as StandardMaterial3D).albedo_color = base_color
-	if is_instance_valid(player):
-		look_at(Vector3(player.global_position.x, global_position.y, player.global_position.z - 0.01), Vector3.UP)
+		if hit_flash == 0.0:
+			_set_flash(false)
+
+	var target := Vector3(player.global_position.x, global_position.y, player.global_position.z + 0.01)
+	look_at(target, Vector3.UP)
 	var distance_z := absf(global_position.z - player.global_position.z)
 	var distance_x := absf(global_position.x - player.global_position.x)
-	if distance_z < 1.65 and distance_x < 1.0 and attack_timer <= 0.0:
-		player.take_damage(damage)
-		attack_timer = attack_interval
+	attack_windup = maxf(0.0, attack_windup - delta)
+	if distance_z < 1.9 and distance_x < 1.05 and attack_timer <= 0.0:
+		if attack_windup <= 0.0:
+			attack_windup = 0.3
+		elif attack_windup < 0.12:
+			player.take_damage(damage)
+			attack_timer = attack_interval
+			attack_windup = 0.0
+	elif distance_z >= 1.9:
+		attack_windup = 0.0
 
 func take_damage(amount: int = 1) -> void:
 	if is_dead:
 		return
 	health -= amount
-	hit_flash = 0.12
-	if is_instance_valid(body_visual):
-		(body_visual.material_override as StandardMaterial3D).albedo_color = Color(0.9, 0.08, 0.055)
+	hit_flash = 0.13
+	_set_flash(true)
 	if health <= 0:
 		is_dead = true
 		var main := get_tree().current_scene
@@ -64,43 +73,110 @@ func take_damage(amount: int = 1) -> void:
 		queue_free()
 
 func _build_enemy() -> void:
-	var body := MeshInstance3D.new()
-	var mesh := CapsuleMesh.new()
-	var material := StandardMaterial3D.new()
+	visual_root = Node3D.new()
+	add_child(visual_root)
+	var armor := _mat(Color(0.11, 0.095, 0.10), 0.7, 0.55)
+	var dark := _mat(Color(0.035, 0.03, 0.04), 0.55, 0.8)
+	var bone := _mat(Color(0.48, 0.43, 0.36), 0.05, 0.9)
+	var rust := _mat(Color(0.35, 0.075, 0.04), 0.5, 0.6)
+	var eye := _mat(Color(0.9, 0.035, 0.012), 0.05, 0.25, Color(0.95, 0.02, 0.004))
+
 	match archetype:
 		EnemyType.BLOODHOUND:
-			mesh.radius = 0.32
-			mesh.height = 1.05
-			body.scale = Vector3(1.0, 0.78, 1.25)
-			material.albedo_color = Color(0.23, 0.035, 0.025)
-			material.emission_enabled = true
-			material.emission = Color(0.12, 0.012, 0.008)
+			_build_bloodhound(armor, dark, bone, eye)
 		EnemyType.EXECUTIONER:
-			mesh.radius = 0.52
-			mesh.height = 2.1
-			body.scale = Vector3(1.12, 1.12, 1.0)
-			material.albedo_color = Color(0.075, 0.065, 0.085)
-			material.metallic = 0.85
+			_build_executioner(armor, dark, rust, eye)
 		_:
-			mesh.radius = 0.38
-			mesh.height = 1.8
-			material.albedo_color = Color(0.12, 0.09, 0.11)
-			material.metallic = 0.6
-	body.mesh = mesh
-	body.material_override = material
-	body_visual = body
-	base_color = material.albedo_color
-	body.position.y = mesh.height * 0.5
-	add_child(body)
-	var eye := MeshInstance3D.new()
-	var eye_mesh := SphereMesh.new()
-	eye_mesh.radius = 0.075
-	eye_mesh.height = 0.15
-	eye.mesh = eye_mesh
-	var eye_material := StandardMaterial3D.new()
-	eye_material.albedo_color = Color(0.9, 0.12, 0.035)
-	eye_material.emission_enabled = true
-	eye_material.emission = Color(0.8, 0.035, 0.01)
-	eye.material_override = eye_material
-	eye.position = Vector3(0, mesh.height * 0.68, -0.34)
-	add_child(eye)
+			_build_hollow_guard(armor, dark, bone, rust, eye)
+
+	for node in visual_root.find_children("*", "MeshInstance3D", true, false):
+		if node.material_override is StandardMaterial3D:
+			var material := node.material_override as StandardMaterial3D
+			flash_materials.append(material)
+			base_colors.append(material.albedo_color)
+
+func _build_hollow_guard(armor: Material, dark: Material, bone: Material, rust: Material, eye: Material) -> void:
+	_capsule(visual_root, Vector3(0, 1.0, 0), 0.35, 1.35, dark)
+	_box(visual_root, Vector3(0, 1.18, -0.03), Vector3(0.78, 0.68, 0.43), armor)
+	_sphere(visual_root, Vector3(0, 1.85, 0), Vector3(0.45, 0.42, 0.4), bone)
+	_box(visual_root, Vector3(0, 1.73, -0.2), Vector3(0.28, 0.055, 0.04), dark)
+	_sphere(visual_root, Vector3(-0.12, 1.82, -0.205), Vector3(0.075, 0.07, 0.04), eye)
+	_sphere(visual_root, Vector3(0.12, 1.82, -0.205), Vector3(0.075, 0.07, 0.04), eye)
+	for side in [-1.0, 1.0]:
+		_sphere(visual_root, Vector3(side * 0.46, 1.45, 0), Vector3(0.3, 0.26, 0.3), armor)
+		_capsule(visual_root, Vector3(side * 0.48, 0.93, 0), 0.12, 0.72, bone)
+		_capsule(visual_root, Vector3(side * 0.18, 0.35, 0), 0.14, 0.65, dark)
+	_box(visual_root, Vector3(0.62, 1.0, -0.12), Vector3(0.09, 0.72, 0.08), rust)
+	_box(visual_root, Vector3(0.62, 0.54, -0.12), Vector3(0.3, 0.08, 0.11), rust)
+
+func _build_bloodhound(armor: Material, dark: Material, bone: Material, eye: Material) -> void:
+	_sphere(visual_root, Vector3(0, 0.72, 0.02), Vector3(0.56, 0.48, 1.0), dark)
+	_sphere(visual_root, Vector3(0, 0.82, -0.5), Vector3(0.42, 0.37, 0.47), armor)
+	_sphere(visual_root, Vector3(0, 0.69, -0.78), Vector3(0.28, 0.22, 0.32), bone)
+	_sphere(visual_root, Vector3(-0.15, 0.91, -0.78), Vector3(0.085, 0.08, 0.05), eye)
+	_sphere(visual_root, Vector3(0.15, 0.91, -0.78), Vector3(0.085, 0.08, 0.05), eye)
+	for side in [-1.0, 1.0]:
+		for front_back in [-0.45, 0.42]:
+			_capsule(visual_root, Vector3(side * 0.29, 0.32, front_back), 0.105, 0.65, armor)
+	_capsule(visual_root, Vector3(0, 1.0, 0.55), 0.08, 0.62, dark)
+	_sphere(visual_root, Vector3(0, 1.3, 0.78), Vector3(0.1, 0.1, 0.1), eye)
+
+func _build_executioner(armor: Material, dark: Material, rust: Material, eye: Material) -> void:
+	_box(visual_root, Vector3(0, 1.35, 0), Vector3(1.02, 1.15, 0.55), dark)
+	_box(visual_root, Vector3(0, 1.53, -0.06), Vector3(1.12, 0.48, 0.64), armor)
+	_sphere(visual_root, Vector3(0, 2.1, 0), Vector3(0.42, 0.42, 0.4), dark)
+	_box(visual_root, Vector3(0, 2.08, -0.25), Vector3(0.37, 0.07, 0.04), rust)
+	_sphere(visual_root, Vector3(-0.12, 2.1, -0.27), Vector3(0.08, 0.07, 0.04), eye)
+	_sphere(visual_root, Vector3(0.12, 2.1, -0.27), Vector3(0.08, 0.07, 0.04), eye)
+	for side in [-1.0, 1.0]:
+		_box(visual_root, Vector3(side * 0.61, 1.58, 0), Vector3(0.42, 0.42, 0.48), armor)
+		_capsule(visual_root, Vector3(side * 0.24, 0.42, 0), 0.19, 0.82, dark)
+	_box(visual_root, Vector3(0.82, 1.0, -0.1), Vector3(0.16, 1.25, 0.16), rust)
+	_box(visual_root, Vector3(0.82, 1.2, -0.1), Vector3(0.72, 0.36, 0.15), armor)
+
+func _set_flash(active: bool) -> void:
+	for i in range(flash_materials.size()):
+		var material := flash_materials[i]
+		if is_instance_valid(material):
+			material.albedo_color = Color(0.95, 0.08, 0.055) if active else base_colors[i]
+
+func _mat(color: Color, metallic: float, roughness: float, emission: Color = Color.BLACK) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.metallic = metallic
+	material.roughness = roughness
+	if emission != Color.BLACK:
+		material.emission_enabled = true
+		material.emission = emission
+		material.emission_energy_multiplier = 2.0
+	return material
+
+func _box(parent: Node3D, pos: Vector3, size: Vector3, material: Material) -> void:
+	var node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	node.mesh = mesh
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
+
+func _sphere(parent: Node3D, pos: Vector3, size: Vector3, material: Material) -> void:
+	var node := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	node.mesh = mesh
+	node.scale = size
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
+
+func _capsule(parent: Node3D, pos: Vector3, radius: float, height: float, material: Material) -> void:
+	var node := MeshInstance3D.new()
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	node.mesh = mesh
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
