@@ -1,0 +1,19 @@
+name: Validate BLACKTHORN OATH Godot project
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import project resources
+        run: godot --headless --editor --path . --quit
+      - name: Run main scene smoke check
+        run: timeout 20s godot --headless --path . --quit-after 120
