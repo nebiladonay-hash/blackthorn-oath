@@ -4,9 +4,10 @@ class_name BlackthornOathPlayer
 signal health_changed(value: int)
 signal died
 
-@export var forward_speed := 12.0
+@export var forward_speed := 0.0
 @export var lane_width := 2.6
-@export var jump_velocity := 10.5
+@export var jump_velocity := 10.2
+
 var lane := 1
 var health := 3
 var dead := false
@@ -14,19 +15,26 @@ var invulnerability := 0.0
 var attack_cooldown := 0.0
 var attack_animation := 0.0
 var slide_timer := 0.0
+
 var hit_shape: CollisionShape3D
-var visual_body: MeshInstance3D
+var visual_root: Node3D
+var torso: MeshInstance3D
 var sword_pivot: Node3D
-var armor_material: StandardMaterial3D
-var standing_height := 1.7
-var sliding_height := 0.9
+var left_arm: Node3D
+var right_arm: Node3D
+var left_leg: Node3D
+var right_leg: Node3D
+var body_material: StandardMaterial3D
+var run_clock := 0.0
+var standing_height := 1.85
+var sliding_height := 0.95
 
 func _ready() -> void:
 	add_to_group("player")
 	_build_character()
 	hit_shape = CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = 0.42
+	capsule.radius = 0.4
 	capsule.height = standing_height
 	hit_shape.shape = capsule
 	hit_shape.position.y = standing_height * 0.5
@@ -37,129 +45,169 @@ func _physics_process(delta: float) -> void:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
 	attack_cooldown = maxf(0.0, attack_cooldown - delta)
-	if attack_animation > 0.0:
-		attack_animation = maxf(0.0, attack_animation - delta)
-		var phase := 1.0 - attack_animation / 0.24
-		sword_pivot.rotation.z = lerpf(-0.95, 1.15, sin(phase * PI))
-	else:
-		sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.95, delta * 12.0)
 	if slide_timer > 0.0:
 		slide_timer = maxf(0.0, slide_timer - delta)
 		if slide_timer == 0.0:
 			_set_sliding(false)
-	if Input.is_action_just_pressed("slide"):
-		slide()
 	if Input.is_action_just_pressed("lane_left"):
 		move_lane(-1)
 	if Input.is_action_just_pressed("lane_right"):
 		move_lane(1)
 	if Input.is_action_just_pressed("jump"):
 		jump()
+	if Input.is_action_just_pressed("slide"):
+		slide()
 	if Input.is_action_just_pressed("attack"):
 		attack()
-	global_position.x = move_toward(global_position.x, float(lane - 1) * lane_width, 13.0 * delta)
+
+	global_position.x = move_toward(global_position.x, float(lane - 1) * lane_width, 14.0 * delta)
 	velocity.z = -forward_speed
 	if not is_on_floor():
-		velocity.y -= 24.0 * delta
+		velocity.y -= 25.0 * delta
+	elif velocity.y < 0.0:
+		velocity.y = 0.0
 	move_and_slide()
-	var character_visible := invulnerability <= 0.0 or int(Time.get_ticks_msec() / 90) % 2 == 0
-	visual_body.visible = character_visible
-	for child in get_children():
-		if child is MeshInstance3D and child != visual_body:
-			child.visible = character_visible and slide_timer <= 0.0
-	sword_pivot.visible = character_visible and slide_timer <= 0.0
+
+	if forward_speed > 0.0 and is_on_floor() and slide_timer <= 0.0:
+		run_clock += delta * minf(forward_speed, 16.0)
+		var swing := sin(run_clock * 1.55) * 0.52
+		left_leg.rotation.x = swing
+		right_leg.rotation.x = -swing
+		if attack_animation <= 0.0:
+			left_arm.rotation.x = -swing * 0.7
+			right_arm.rotation.x = swing * 0.7
+		visual_root.position.y = absf(sin(run_clock * 3.1)) * 0.055
+	else:
+		left_leg.rotation.x = lerpf(left_leg.rotation.x, 0.0, delta * 8.0)
+		right_leg.rotation.x = lerpf(right_leg.rotation.x, 0.0, delta * 8.0)
+		visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.5)
+
+	if attack_animation > 0.0:
+		attack_animation = maxf(0.0, attack_animation - delta)
+		var phase := 1.0 - attack_animation / 0.32
+		right_arm.rotation.x = -1.5 + sin(phase * PI) * 2.5
+		sword_pivot.rotation.z = -0.85 + sin(phase * PI) * 1.7
+	else:
+		right_arm.rotation.x = lerpf(right_arm.rotation.x, 0.0, delta * 10.0)
+		sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.85, delta * 10.0)
+
+	var visible_now := invulnerability <= 0.0 or int(Time.get_ticks_msec() / 85) % 2 == 0
+	visual_root.visible = visible_now
 
 func _build_character() -> void:
-	armor_material = StandardMaterial3D.new()
-	armor_material.albedo_color = Color(0.12, 0.095, 0.12)
-	armor_material.metallic = 0.75
-	visual_body = MeshInstance3D.new()
-	var body_mesh := CapsuleMesh.new()
-	body_mesh.radius = 0.4
-	body_mesh.height = standing_height
-	visual_body.mesh = body_mesh
-	visual_body.material_override = armor_material
-	visual_body.position.y = standing_height * 0.5
-	add_child(visual_body)
+	visual_root = Node3D.new()
+	add_child(visual_root)
 
-	var chest := MeshInstance3D.new()
-	var chest_mesh := BoxMesh.new()
-	chest_mesh.size = Vector3(0.68, 0.72, 0.43)
-	chest.mesh = chest_mesh
-	chest.position = Vector3(0, 1.08, -0.015)
-	chest.material_override = _material(Color(0.055, 0.06, 0.075), 0.9)
-	add_child(chest)
+	var armor := _mat(Color(0.105, 0.12, 0.15), 0.82, 0.35)
+	var dark_steel := _mat(Color(0.035, 0.045, 0.06), 0.92, 0.3)
+	var leather := _mat(Color(0.13, 0.055, 0.035), 0.1, 0.8)
+	var crimson := _mat(Color(0.24, 0.018, 0.035), 0.05, 0.78)
+	var bronze := _mat(Color(0.55, 0.29, 0.09), 0.78, 0.35)
+	var blade_mat := _mat(Color(0.68, 0.74, 0.82), 0.95, 0.2)
+	var glow := _mat(Color(0.75, 0.06, 0.025), 0.1, 0.25, Color(0.9, 0.025, 0.005))
 
-	var head := MeshInstance3D.new()
-	var head_mesh := SphereMesh.new()
-	head_mesh.radius = 0.23
-	head_mesh.height = 0.46
-	head.mesh = head_mesh
-	head.position = Vector3(0, 1.83, 0)
-	head.material_override = _material(Color(0.16, 0.12, 0.12), 0.2)
-	add_child(head)
+	# Layered torso and waist.
+	torso = _box(visual_root, Vector3(0, 1.18, 0), Vector3(0.76, 0.78, 0.43), armor)
+	_box(visual_root, Vector3(0, 1.38, -0.02), Vector3(0.7, 0.34, 0.47), dark_steel)
+	_box(visual_root, Vector3(0, 0.72, 0), Vector3(0.58, 0.22, 0.38), leather)
+	_box(visual_root, Vector3(0, 0.72, -0.22), Vector3(0.6, 0.09, 0.07), bronze)
 
-	var helm := MeshInstance3D.new()
-	var helm_mesh := BoxMesh.new()
-	helm_mesh.size = Vector3(0.5, 0.18, 0.48)
-	helm.mesh = helm_mesh
-	helm.position = Vector3(0, 2.0, 0)
-	helm.material_override = _material(Color(0.045, 0.05, 0.065), 0.95)
-	add_child(helm)
+	# Helmet, face slit, brow and side guards.
+	_sphere(visual_root, Vector3(0, 1.92, 0), Vector3(0.29, 0.34, 0.27), dark_steel)
+	_box(visual_root, Vector3(0, 1.91, -0.235), Vector3(0.35, 0.1, 0.045), bronze)
+	_box(visual_root, Vector3(0, 1.81, -0.26), Vector3(0.25, 0.035, 0.035), glow)
+	_box(visual_root, Vector3(0, 2.18, 0.015), Vector3(0.1, 0.24, 0.11), bronze)
+	_box(visual_root, Vector3(-0.31, 1.88, 0), Vector3(0.08, 0.32, 0.26), armor)
+	_box(visual_root, Vector3(0.31, 1.88, 0), Vector3(0.08, 0.32, 0.26), armor)
 
-	var cape := MeshInstance3D.new()
-	var cape_mesh := BoxMesh.new()
-	cape_mesh.size = Vector3(0.52, 0.9, 0.1)
-	cape.mesh = cape_mesh
-	cape.position = Vector3(0, 1.05, 0.29)
-	cape.rotation.x = deg_to_rad(-8)
-	cape.material_override = _material(Color(0.16, 0.018, 0.028), 0.05)
-	add_child(cape)
+	# Shoulder plates and articulated arms.
+	_sphere(visual_root, Vector3(-0.46, 1.48, 0), Vector3(0.28, 0.24, 0.28), dark_steel)
+	_sphere(visual_root, Vector3(0.46, 1.48, 0), Vector3(0.28, 0.24, 0.28), dark_steel)
+	left_arm = Node3D.new()
+	left_arm.position = Vector3(-0.48, 1.42, 0)
+	visual_root.add_child(left_arm)
+	_capsule(left_arm, Vector3(0, -0.3, 0), 0.14, 0.65, armor)
+	_box(left_arm, Vector3(0, -0.62, -0.01), Vector3(0.2, 0.19, 0.22), bronze)
+	right_arm = Node3D.new()
+	right_arm.position = Vector3(0.48, 1.42, 0)
+	visual_root.add_child(right_arm)
+	_capsule(right_arm, Vector3(0, -0.3, 0), 0.14, 0.65, armor)
+	_box(right_arm, Vector3(0, -0.62, -0.01), Vector3(0.2, 0.19, 0.22), bronze)
 
-	for side in [-1.0, 1.0]:
-		var shoulder := MeshInstance3D.new()
-		var shoulder_mesh := SphereMesh.new()
-		shoulder_mesh.radius = 0.22
-		shoulder_mesh.height = 0.3
-		shoulder.mesh = shoulder_mesh
-		shoulder.position = Vector3(side * 0.43, 1.35, 0)
-		shoulder.material_override = _material(Color(0.075, 0.08, 0.095), 0.9)
-		add_child(shoulder)
+	# Legs and plated greaves.
+	left_leg = Node3D.new()
+	left_leg.position = Vector3(-0.2, 0.64, 0)
+	visual_root.add_child(left_leg)
+	_capsule(left_leg, Vector3(0, -0.27, 0), 0.15, 0.63, dark_steel)
+	_box(left_leg, Vector3(0, -0.48, -0.1), Vector3(0.28, 0.27, 0.38), leather)
+	right_leg = Node3D.new()
+	right_leg.position = Vector3(0.2, 0.64, 0)
+	visual_root.add_child(right_leg)
+	_capsule(right_leg, Vector3(0, -0.27, 0), 0.15, 0.63, dark_steel)
+	_box(right_leg, Vector3(0, -0.48, -0.1), Vector3(0.28, 0.27, 0.38), leather)
 
+	# Heavy split cape.
+	_box(visual_root, Vector3(0, 1.08, 0.29), Vector3(0.64, 0.98, 0.12), crimson).rotation.x = deg_to_rad(-8)
+	_box(visual_root, Vector3(0, 0.59, 0.3), Vector3(0.62, 0.16, 0.13), leather)
+
+	# Sword: pommel, wrapped grip, crossguard and tapered steel blade.
 	sword_pivot = Node3D.new()
-	sword_pivot.position = Vector3(0.52, 1.08, -0.12)
-	add_child(sword_pivot)
-	var blade := MeshInstance3D.new()
-	var blade_mesh := BoxMesh.new()
-	blade_mesh.size = Vector3(0.12, 0.82, 0.055)
-	blade.mesh = blade_mesh
-	blade.position.y = 0.48
-	blade.material_override = _material(Color(0.55, 0.59, 0.66), 0.92)
-	sword_pivot.add_child(blade)
-	var guard := MeshInstance3D.new()
-	var guard_mesh := BoxMesh.new()
-	guard_mesh.size = Vector3(0.42, 0.09, 0.13)
-	guard.mesh = guard_mesh
-	guard.position.y = 0.08
-	guard.material_override = _material(Color(0.52, 0.29, 0.09), 0.8)
-	sword_pivot.add_child(guard)
-	var grip := MeshInstance3D.new()
-	var grip_mesh := CylinderMesh.new()
-	grip_mesh.top_radius = 0.055
-	grip_mesh.bottom_radius = 0.055
-	grip_mesh.height = 0.27
-	grip.mesh = grip_mesh
-	grip.position.y = -0.09
-	grip.material_override = _material(Color(0.12, 0.055, 0.035), 0.1)
-	sword_pivot.add_child(grip)
-	sword_pivot.rotation.z = -0.95
+	sword_pivot.position = Vector3(0.53, 1.0, -0.08)
+	sword_pivot.rotation.z = -0.85
+	right_arm.add_child(sword_pivot)
+	_capsule(sword_pivot, Vector3(0, 0.12, 0), 0.045, 0.33, leather)
+	_sphere(sword_pivot, Vector3(0, -0.06, 0), Vector3(0.09, 0.09, 0.09), bronze)
+	_box(sword_pivot, Vector3(0, 0.3, 0), Vector3(0.39, 0.085, 0.1), bronze)
+	_box(sword_pivot, Vector3(0, 0.83, 0), Vector3(0.16, 1.0, 0.045), blade_mat)
+	var blade_tip := _sphere(sword_pivot, Vector3(0, 1.36, 0), Vector3(0.07, 0.16, 0.045), blade_mat)
+	blade_tip.rotation.z = 0.0
 
-func _material(color: Color, metal: float) -> StandardMaterial3D:
+	# Small ember mark on the chest.
+	_sphere(visual_root, Vector3(0, 1.17, -0.25), Vector3(0.085, 0.11, 0.035), glow)
+
+func _mat(color: Color, metal: float, rough: float, emission: Color = Color.BLACK) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = color
 	material.metallic = metal
-	material.roughness = 0.42
+	material.roughness = rough
+	if emission != Color.BLACK:
+		material.emission_enabled = true
+		material.emission = emission
+		material.emission_energy_multiplier = 2.0
 	return material
+
+func _box(parent: Node3D, pos: Vector3, size: Vector3, material: Material) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	node.mesh = mesh
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
+	return node
+
+func _sphere(parent: Node3D, pos: Vector3, size: Vector3, material: Material) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = 0.5
+	mesh.height = 1.0
+	node.mesh = mesh
+	node.scale = size
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
+	return node
+
+func _capsule(parent: Node3D, pos: Vector3, radius: float, height: float, material: Material) -> MeshInstance3D:
+	var node := MeshInstance3D.new()
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	node.mesh = mesh
+	node.position = pos
+	node.material_override = material
+	parent.add_child(node)
+	return node
 
 func move_lane(direction: int) -> void:
 	lane = clampi(lane + direction, 0, 2)
@@ -170,29 +218,31 @@ func jump() -> void:
 
 func slide() -> void:
 	if is_on_floor() and slide_timer <= 0.0:
-		slide_timer = 0.72
+		slide_timer = 0.78
 		_set_sliding(true)
 
 func _set_sliding(enabled: bool) -> void:
 	var capsule := hit_shape.shape as CapsuleShape3D
 	capsule.height = sliding_height if enabled else standing_height
 	hit_shape.position.y = capsule.height * 0.5
-	visual_body.scale.y = 0.58 if enabled else 1.0
-	for child in get_children():
-		if child is MeshInstance3D and child != visual_body:
-			child.visible = not enabled
+	visual_root.scale.y = 0.58 if enabled else 1.0
+	left_arm.visible = not enabled
+	right_arm.visible = not enabled
+	left_leg.visible = not enabled
+	right_leg.visible = not enabled
 	sword_pivot.visible = not enabled
 
 func attack() -> void:
-	if attack_cooldown > 0.0:
+	if attack_cooldown > 0.0 or slide_timer > 0.0:
 		return
-	attack_cooldown = 0.48
-	attack_animation = 0.24
+	attack_cooldown = 0.58
+	attack_animation = 0.32
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if is_instance_valid(enemy):
-			var d: Vector3 = enemy.global_position - global_position
-			if absf(d.x) < 1.5 and d.z > -3.0 and d.z < 1.0:
-				enemy.take_damage(1)
+		if not is_instance_valid(enemy):
+			continue
+		var d: Vector3 = enemy.global_position - global_position
+		if absf(d.x) < 1.5 and d.z > -3.2 and d.z < 0.8:
+			enemy.take_damage(1)
 
 func take_damage(amount: int = 1) -> void:
 	if dead or invulnerability > 0.0:
@@ -200,6 +250,6 @@ func take_damage(amount: int = 1) -> void:
 	health = maxi(0, health - amount)
 	invulnerability = 1.0
 	health_changed.emit(health)
-	if health == 0:
+	if health <= 0:
 		dead = true
 		died.emit()
