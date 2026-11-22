@@ -16,17 +16,66 @@ concurrency:
 jobs:
   android-debug:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     container:
       image: barichello/godot-ci:4.4.1
     steps:
       - uses: actions/checkout@v4
-      - name: Import project
-        run: godot --headless --editor --path . --quit
-      - name: Verify Android export preset
-        run: godot --headless --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk
-      - name: Check APK output
-        run: test -s build/BLACKTHORN-OATH-debug.apk
+
+      - name: Prepare Godot Android export environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT_VERSION="$(godot --version | sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+).*/\1/')"
+          TEMPLATE_VERSION="${GODOT_VERSION}.stable"
+          echo "Godot version: $GODOT_VERSION"
+          echo "Runner HOME: $HOME"
+
+          # The container image installs templates and Android tooling under /root.
+          # GitHub Actions provides a different HOME to workflow steps.
+          TEMPLATE_SOURCE="$(find /root/.local/share/godot -type f -name android_debug.apk -print -quit 2>/dev/null || true)"
+          if [ -z "$TEMPLATE_SOURCE" ]; then
+            echo "::error::Godot Android export templates were not found in the CI image."
+            find /root/.local/share/godot -maxdepth 5 -type f | head -80 || true
+            exit 1
+          fi
+          TEMPLATE_SOURCE_DIR="$(dirname "$TEMPLATE_SOURCE")"
+          TEMPLATE_DEST="$HOME/.local/share/godot/export_templates/$TEMPLATE_VERSION"
+          mkdir -p "$TEMPLATE_DEST"
+          cp -a "$TEMPLATE_SOURCE_DIR/." "$TEMPLATE_DEST/"
+          test -s "$TEMPLATE_DEST/android_debug.apk"
+          test -s "$TEMPLATE_DEST/android_release.apk"
+
+          test -x /usr/lib/jvm/java-17-openjdk-amd64/bin/java
+          test -d /usr/lib/android-sdk/platform-tools
+          test -f /root/debug.keystore
+
+          mkdir -p "$HOME/.config/godot"
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<'SETTINGS'
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"
+          export/android/android_sdk_path = "/usr/lib/android-sdk"
+          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          export/android/force_system_user = false
+          export/android/timestamping_authority_url = ""
+          export/android/shutdown_adb_on_exit = true
+          SETTINGS
+
+          godot --headless --editor --path . --quit
+
+      - name: Export Android debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          godot --headless --path . --export-debug "Android" build/BLACKTHORN-OATH-debug.apk
+          test -s build/BLACKTHORN-OATH-debug.apk
+          file build/BLACKTHORN-OATH-debug.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
