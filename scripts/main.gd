@@ -193,7 +193,7 @@ func _build_interface() -> void:
 	menu_box.add_child(subtitle)
 	var instructions := _label("SWIPE  move  /  jump  /  slide\nATTACK  strike enemies before they reach you\nCOLLECT  lost relics to build your reserve", 15, Color(0.68, 0.67, 0.7))
 	instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	instructions.add_theme_line_spacing_override("line_spacing", 6)
+	instructions.add_theme_constant_override("line_spacing", 6)
 	menu_box.add_child(instructions)
 	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 62), _start_run, Control.PRESET_TOP_LEFT, 20)
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
