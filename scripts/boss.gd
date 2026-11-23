@@ -62,6 +62,9 @@ func _process(delta: float) -> void:
 			var distance_x := absf(player.global_position.x - warning_lane_x)
 			if distance_z <= 3.6 and distance_x <= 1.1:
 				player.take_damage(1 if phase < 3 else 2)
+				var impact_scene := get_tree().current_scene
+				if impact_scene != null and impact_scene.has_method("play_sfx"):
+					impact_scene.call("play_sfx", "impact", global_position)
 			if is_instance_valid(strike_telegraph):
 				strike_telegraph.visible = false
 			slam_cooldown = 2.7 if phase == 1 else (2.25 if phase == 2 else 1.85)
@@ -76,6 +79,9 @@ func _process(delta: float) -> void:
 			strike_telegraph.position.x = warning_lane_x - global_position.x
 			strike_telegraph.visible = true
 		_play_enemy_animation("sword_attack")
+		var warning_scene := get_tree().current_scene
+		if warning_scene != null and warning_scene.has_method("play_sfx"):
+			warning_scene.call("play_sfx", "creature", global_position)
 		if is_instance_valid(boss_health_label):
 			boss_health_label.text = "ASHEN WARDEN  ·  HEAVY STRIKE"
 
