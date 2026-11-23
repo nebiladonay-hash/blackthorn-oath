@@ -59,3 +59,5 @@ Prototype 0.4.4 is an environment and cinematic vertical-slice upgrade, not a fi
 - **Knight and cathedral models:** see the source notes in `scripts/download_assets.sh`; the included model providers' license terms are recorded there.
 - **RPG sound effects:** OpenGameArt, *RPG Sound Pack* by artisticdude, CC0: https://opengameart.org/content/rpg-sound-pack
 - **Animation source under evaluation:** Quaternius, *Universal Animation Library 2*, CC0: https://quaternius.com/packs/universalanimationlibrary2.html
+
+- **Footsteps and supplementary impacts:** OpenGameArt, *100 CC0 SFX #2*, CC0: https://opengameart.org/content/100-cc0-sfx-2
