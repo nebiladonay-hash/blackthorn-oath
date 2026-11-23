@@ -19,3 +19,14 @@ AutoSprite states that its models are CC0, free for commercial use, and need no 
 The cathedral is the static distant landmark. The silver knight is the playable character. The T1 Sentinel is the oversized Warden reveal. Road collisions and the surrounding gatehouse remain authored in the Godot project.
 
 Local builds must run `bash scripts/download_assets.sh` before opening the project. The exact downloaded GLBs are not committed to Git because the CI downloader keeps the repository smaller; the download source and licence are recorded here.
+
+
+## KayKit integration
+
+Blackthorn Oath now uses official KayKit CC0 assets in the playable scene:
+
+- **Player:** KayKit Adventurers Knight GLB, replacing the previous Silver Knight source model while retaining the existing animation-selection and combat-animation bridge.
+- **Environment dressing:** KayKit Dungeon Remastered GLB props (mounted torches, lit torches, decorated pillars, barrel and gold chest) placed along the cathedral approach without changing lane collision or gameplay geometry.
+- **Licensing:** both source packs are CC0 1.0; their license files are downloaded into the project with the assets.
+- **Sources:** https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 and https://github.com/KayKit-Game-Assets/KayKit-Dungeon-Remastered-1.0
+- **Import:** CI and local builds use `bash scripts/download_assets.sh`. The downloaded GLBs are not committed to Git; the downloader pins the official repositories' main-branch raw asset paths.
