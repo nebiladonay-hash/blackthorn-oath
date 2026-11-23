@@ -86,3 +86,12 @@ Prototype 0.5.0 is an environment and cinematic vertical-slice upgrade, not a fi
 - Cinzel is bundled from Google Fonts under SIL Open Font License 1.1; the full OFL is included in `assets/fonts/OFL-Cinzel.txt`.
 - The in-game touch controls are icon-only beveled rune medallions. Lane movement uses the existing swipe controls, so redundant left/right screen buttons are removed.
 - CC0 audio sources: Kenney Impact Sounds via 3DValley for stone footsteps and steel impacts; artisticdude's CC0 Swishes Sound Pack on OpenGameArt for blade movement. Relic collection no longer triggers random high-pitched pickup dings.
+
+
+## 0.5.1 — Premium UI, title art and curated audio
+- Replaced the badge-like launcher mark with full-bleed gothic cathedral key art.
+- Replaced the default boot presentation with a custom cinematic cathedral splash, compiled to PNG during the CI asset setup because Godot's boot splash setting expects a raster image.
+- Rebuilt the in-game interface as a restrained raised-rune control system: icon-only touch medallions for jump, slide, strike, pause and flask; swipe gestures remain the lane controls. The HUD is now a compact top status rail rather than a large block of text.
+- Added Cinzel display typography under the SIL Open Font License 1.1; license file is bundled.
+- Removed loose filename-based random SFX classification and random pickup chimes. Audio now uses a small named, curated library: concrete footsteps, heavy steel impacts and CC0 blade swishes. Relic collection is intentionally silent until a suitable low-frequency relic cue is selected.
+- SFX source licenses: Kenney Impact Sounds via 3DValley (CC0) and artisticdude's Swishes Sound Pack on OpenGameArt (CC0).
