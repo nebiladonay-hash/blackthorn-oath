@@ -113,15 +113,39 @@ func _build_character() -> void:
 			if imported_model != null:
 				imported_model.name = "SilverKnightRigged"
 				visual_root.add_child(imported_model)
+				_fit_imported_model(imported_model, 1.9)
 				using_imported_model = true
 				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					imported_animation = animation_nodes[0] as AnimationPlayer
-				_build_imported_sword()
+				# The rigged asset already carries its own weapon. Do not add a second
+				# unrigged blade at world scale; it detached from the hand in the review.
+				sword_pivot = null
 				_play_imported_animation("idle")
 				return
 
 	_build_procedural_character()
+
+func _fit_imported_model(model: Node3D, target_height: float) -> void:
+	var combined := AABB()
+	var has_bounds := false
+	for item in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := item as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var relative_transform: Transform3D = model.global_transform.affine_inverse() * mesh_instance.global_transform
+		var mesh_bounds: AABB = mesh_instance.get_aabb() * relative_transform
+		if has_bounds:
+			combined = combined.merge(mesh_bounds)
+		else:
+			combined = mesh_bounds
+			has_bounds = true
+	if not has_bounds or combined.size.y <= 0.001:
+		model.scale = Vector3.ONE
+		return
+	var fit_scale: float = target_height / combined.size.y
+	model.scale = Vector3.ONE * fit_scale
+	model.position.y = -combined.position.y * fit_scale
 
 func _build_imported_sword() -> void:
 	# A separate blade sits against the right hand and is animated during strikes.
@@ -159,9 +183,11 @@ func _update_imported_animation(delta: float) -> void:
 	if attack_animation > 0.0:
 		attack_animation = maxf(0.0, attack_animation - delta)
 		var phase := 1.0 - attack_animation / 0.32
-		sword_pivot.rotation.z = -0.68 + sin(phase * PI) * 1.95
+		if sword_pivot != null:
+			sword_pivot.rotation.z = -0.68 + sin(phase * PI) * 1.95
 	else:
-		sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.68, delta * 10.0)
+		if sword_pivot != null:
+			sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.68, delta * 10.0)
 
 func _build_procedural_character() -> void:
 	var armor := _mat(Color(0.105, 0.12, 0.15), 0.82, 0.35)
