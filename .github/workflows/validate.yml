@@ -51,6 +51,13 @@ jobs:
             exit 1
           fi
 
+      - name: Test runner movement, enemy collision and sword combat
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 30s godot --headless --path . --script res://tests/validate_gameplay.gd 2>&1 | tee /tmp/godot-gameplay.log
+          grep -F "GAMEPLAY_VALIDATION_COMPLETE" /tmp/godot-gameplay.log
+
       - name: Capture cinematic intro frames with software rendering
         shell: bash
         run: |
