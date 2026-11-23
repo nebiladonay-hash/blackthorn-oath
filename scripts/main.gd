@@ -6,6 +6,7 @@ const HazardScript = preload("res://scripts/hazard.gd")
 const RelicScript = preload("res://scripts/relic.gd")
 const SCORE_PATH := "res://audio/blackthorn_cinematic_ambience.wav"
 const CATHEDRAL_MODEL_PATH := "res://assets/models/generic-gothic-cathedral.glb"
+const WARDEN_MODEL_PATH := "res://assets/models/t1-sentinel.glb"
 
 const LANE_WIDTH: float = 2.6
 const SEGMENT_LENGTH: float = 32.0
@@ -359,42 +360,41 @@ func _add_gate_guardian(parent: Node3D) -> void:
 	gate_guardian.visible = false
 	parent.add_child(gate_guardian)
 
-	var black_iron := _standard_material(Color(0.018, 0.022, 0.032), 0.94, 0.22)
-	var ash_bone := _standard_material(Color(0.24, 0.20, 0.19), 0.18, 0.88)
-	var dull_steel := _standard_material(Color(0.12, 0.14, 0.17), 0.86, 0.32)
-	var blood_glow := _standard_material(Color(0.95, 0.025, 0.01), 0.08, 0.2, Color(1.0, 0.012, 0.002), 4.2)
+	if ResourceLoader.exists(WARDEN_MODEL_PATH):
+		var sentinel_scene: PackedScene = load(WARDEN_MODEL_PATH) as PackedScene
+		if sentinel_scene != null:
+			var sentinel: Node3D = sentinel_scene.instantiate() as Node3D
+			if sentinel != null:
+				sentinel.name = "RiggedBellWarden"
+				sentinel.scale = Vector3(4.1, 4.1, 4.1)
+				sentinel.rotation.y = PI
+				gate_guardian.add_child(sentinel)
+				var animation_nodes := sentinel.find_children("*", "AnimationPlayer", true, false)
+				if not animation_nodes.is_empty():
+					var animation_player := animation_nodes[0] as AnimationPlayer
+					if animation_player.has_animation("idle"):
+						animation_player.play("idle")
+				_make_spire(gate_guardian, Vector3(-0.48, 7.1, 0.1), 2.0, 0.19, metal_material)
+				_make_spire(gate_guardian, Vector3(0.48, 7.1, 0.1), 2.0, 0.19, metal_material)
+				_sphere(gate_guardian, Vector3(0, 3.8, -0.42), Vector3(0.3, 0.42, 0.08), ember_material)
+				return
 
-	# A towering bell-keeper with a broad shoulder line and unmistakable crown silhouette.
+	_build_procedural_gate_guardian()
+
+func _build_procedural_gate_guardian() -> void:
+	var black_iron := _standard_material(Color(0.08, 0.085, 0.11), 0.86, 0.3)
+	var ash_bone := _standard_material(Color(0.28, 0.23, 0.22), 0.12, 0.86)
+	var blood_glow := _standard_material(Color(0.95, 0.025, 0.01), 0.08, 0.2, Color(1.0, 0.012, 0.002), 4.2)
 	_box(gate_guardian, Vector3(0, 5.2, 0), Vector3(2.6, 3.5, 1.3), black_iron)
-	_box(gate_guardian, Vector3(0, 6.15, -0.12), Vector3(3.6, 1.35, 1.55), dull_steel)
-	_box(gate_guardian, Vector3(0, 4.0, -0.08), Vector3(1.75, 1.25, 1.1), ash_bone)
+	_box(gate_guardian, Vector3(0, 6.15, -0.12), Vector3(3.6, 1.35, 1.55), metal_material)
 	_sphere(gate_guardian, Vector3(0, 7.45, -0.02), Vector3(1.35, 1.55, 1.05), black_iron)
-	_box(gate_guardian, Vector3(0, 7.32, -0.57), Vector3(0.78, 0.14, 0.12), ash_bone)
 	_sphere(gate_guardian, Vector3(-0.28, 7.44, -0.61), Vector3(0.19, 0.14, 0.08), blood_glow)
 	_sphere(gate_guardian, Vector3(0.28, 7.44, -0.61), Vector3(0.19, 0.14, 0.08), blood_glow)
-
 	for side_index in range(2):
 		var side: float = -1.0 if side_index == 0 else 1.0
 		_box(gate_guardian, Vector3(side * 1.78, 6.1, -0.02), Vector3(1.1, 1.55, 1.25), black_iron)
-		_capsule(gate_guardian, Vector3(side * 1.9, 4.65, -0.02), 0.33, 1.65, dull_steel)
+		_capsule(gate_guardian, Vector3(side * 1.9, 4.65, -0.02), 0.33, 1.65, ash_bone)
 		_box(gate_guardian, Vector3(side * 0.72, 2.7, 0.0), Vector3(0.82, 2.9, 0.92), black_iron)
-		_capsule(gate_guardian, Vector3(side * 0.72, 0.9, -0.02), 0.27, 1.6, ash_bone)
-		# Broken crown horns, slanted outward, define the Warden against the portal glow.
-		var horn := MeshInstance3D.new()
-		var horn_mesh := CylinderMesh.new()
-		horn_mesh.top_radius = 0.025
-		horn_mesh.bottom_radius = 0.29
-		horn_mesh.height = 2.45
-		horn_mesh.radial_segments = 7
-		horn.mesh = horn_mesh
-		horn.position = Vector3(side * 0.56, 8.65, 0.0)
-		horn.rotation.z = -side * deg_to_rad(25.0)
-		horn.material_override = black_iron
-		gate_guardian.add_child(horn)
-
-	_box(gate_guardian, Vector3(1.62, 3.95, -0.18), Vector3(0.22, 5.8, 0.2), dull_steel)
-	_box(gate_guardian, Vector3(1.62, 6.0, -0.18), Vector3(1.6, 0.38, 0.34), black_iron)
-	_sphere(gate_guardian, Vector3(0, 3.55, -0.65), Vector3(0.34, 0.42, 0.08), blood_glow)
 
 func _add_cathedral_tower(parent: Node3D, x: float, base_y: float, height: float, width: float) -> void:
 	var tower := Node3D.new()
