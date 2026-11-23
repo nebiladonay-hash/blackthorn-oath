@@ -2,7 +2,7 @@ name: Validate BLACKTHORN OATH Godot project
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'ui/**' ]
   pull_request:
   workflow_dispatch:
 
