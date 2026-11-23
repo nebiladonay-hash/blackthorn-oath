@@ -63,6 +63,7 @@ jobs:
           test -s build/visual_review/02-bell-warden-gate-reveal.png
           test -s build/visual_review/03-knight-reveal.png
           test -s build/visual_review/04-title-and-start-screen.png
+          test -s build/visual_review/05-gameplay-runner.png
 
       - name: Upload cinematic visual review
         uses: actions/upload-artifact@v4
