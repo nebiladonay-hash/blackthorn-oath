@@ -115,13 +115,14 @@ func _run_gameplay_checks() -> void:
 	enemy.attack_timer = 999.0
 	player.forward_speed = 0.0
 	var enemy_health_before := enemy.health
-	print("MELEE_TEST_BEFORE player=", player.global_position, " enemy=", enemy.global_position, " delta=", enemy.global_position - player.global_position, " groups=", player.get_tree().get_nodes_in_group("enemies").size(), " cd=", player.attack_cooldown)
+	player.attack_power = 1
+	print("MELEE_TEST_BEFORE player=", player.global_position, " enemy=", enemy.global_position, " delta=", enemy.global_position - player.global_position, " attack_power=", player.attack_power)
 	player.attack()
 	# Melee damage is intentionally delayed until the blade reaches its impact
 	# frame. Wait through that authored wind-up instead of checking on input.
 	await create_timer(0.24).timeout
-	print("MELEE_TEST_AFTER player=", player.global_position, " enemy=", enemy.global_position, " health_before=", enemy_health_before, " health_after=", enemy.health, " pending=", player.attack_hit_pending, " hit_timer=", player.attack_hit_timer)
-	if enemy.health != enemy_health_before - 1:
+	print("MELEE_TEST_AFTER health_before=", enemy_health_before, " health_after=", enemy.health)
+	if enemy.health != maxi(0, enemy_health_before - player.attack_power):
 		push_error("GAMEPLAY_TEST: sword attack did not damage enemy")
 		scene.queue_free()
 		quit(5)
