@@ -63,6 +63,10 @@ var pause_button: Button
 var coin_label: Label
 var shop_panel: PanelContainer
 var shop_status_label: Label
+var blade_buy_button: Button
+var vitality_buy_button: Button
+var fortune_buy_button: Button
+var flask_buy_button: Button
 var contracts_panel: PanelContainer
 var contracts_status_label: Label
 var daily_key: String = ""
@@ -998,14 +1002,14 @@ func _build_interface() -> void:
 	shop_status_label = _label("", 15, Color(0.94, 0.73, 0.35))
 	shop_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shop_box.add_child(shop_status_label)
-	var blade_buy := _button(shop_box, "TEMPERED EDGE  ·  80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("blade"), Control.PRESET_TOP_LEFT, 15)
-	blade_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var vitality_buy := _button(shop_box, "VITALITY RUNE  ·  100 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("vitality"), Control.PRESET_TOP_LEFT, 15)
-	vitality_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var fortune_buy := _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 15)
-	fortune_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var flask_buy := _button(shop_box, "HEALING FLASK  ·  45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("flask"), Control.PRESET_TOP_LEFT, 15)
-	flask_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	blade_buy_button = _button(shop_box, "TEMPERED EDGE  ·  80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("blade"), Control.PRESET_TOP_LEFT, 15)
+	blade_buy_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vitality_buy_button = _button(shop_box, "VITALITY RUNE  ·  100 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("vitality"), Control.PRESET_TOP_LEFT, 15)
+	vitality_buy_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	fortune_buy_button = _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 15)
+	fortune_buy_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flask_buy_button = _button(shop_box, "HEALING FLASK  ·  45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("flask"), Control.PRESET_TOP_LEFT, 15)
+	flask_buy_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var shop_close := _button(shop_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_shop, Control.PRESET_TOP_LEFT, 14)
 	shop_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -1817,15 +1821,26 @@ func _build_kaykit_dungeon_dressing() -> void:
 func _apply_player_upgrades() -> void:
 	if not is_instance_valid(player):
 		return
+	var old_max_health := player.max_health
+	var old_health := player.health
 	player.attack_power = 1 + blade_level
 	player.max_health = 3 + vitality_level
-	player.health = player.max_health
+	var gained_capacity := maxi(0, player.max_health - old_max_health)
+	player.health = mini(player.max_health, old_health + gained_capacity)
+
+func _refresh_shop() -> void:
+	shop_status_label.text = "PURSE  %d COINS     ·     EDGE %d     ·     VITALITY %d     ·     FLASKS %d/5" % [coin_wallet, blade_level, vitality_level, healing_flasks]
+	blade_buy_button.text = "TEMPERED EDGE  ·  %d COINS" % (80 + blade_level * 65)
+	vitality_buy_button.text = "VITALITY RUNE  ·  %d COINS" % (100 + vitality_level * 80)
+	fortune_buy_button.text = "GILDED OATH  ·  %d COINS" % (120 + fortune_level * 90)
+	flask_buy_button.text = "HEALING FLASK  ·  45 COINS  (%d/5)" % healing_flasks
+	flask_buy_button.disabled = healing_flasks >= 5
 
 func _open_shop() -> void:
 	if game_started and not game_over:
 		paused = true
 		get_tree().paused = true
-	shop_status_label.text = "PURSE  %d COINS     ·     EDGE %d     ·     VITALITY %d" % [coin_wallet, blade_level, vitality_level]
+	_refresh_shop()
 	shop_panel.show()
 	if is_instance_valid(modal_panel):
 		modal_panel.hide()
@@ -1875,5 +1890,6 @@ func _buy_upgrade(kind: String) -> void:
 			healing_flasks += 1
 	_apply_player_upgrades()
 	_save_progress()
+	_refresh_shop()
 	shop_status_label.text = "PURCHASED  ·  %d COINS REMAIN" % coin_wallet
 	_update_hud()
