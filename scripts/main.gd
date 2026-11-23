@@ -788,7 +788,7 @@ func _build_interface() -> void:
 	controls.add_child(tutorial_label)
 
 	# CenterContainer provides consistent placement across phone aspect ratios.
-		var menu_row := HBoxContainer.new()
+	var menu_row := HBoxContainer.new()
 	menu_row.name = "TitleMenuLayout"
 	menu_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	menu_row.offset_left = 28
