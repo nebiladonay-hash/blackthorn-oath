@@ -37,6 +37,11 @@ func _run_gameplay_checks() -> void:
 		return
 	print("GAMEPLAY_COLLISION_OK player_z=", player.global_position.z, " enemy_z=", enemy_z)
 
+	if player.imported_model == null or not is_equal_approx(player.imported_model.rotation.y, PI):
+		push_error("GAMEPLAY_TEST: runner is not facing down the -Z track")
+		scene.queue_free()
+		quit(7)
+		return
 	if player.imported_animation == null or not player.imported_animation.has_animation("combat/sword_attack"):
 		push_error("GAMEPLAY_TEST: imported sword attack animation is missing")
 		scene.queue_free()
