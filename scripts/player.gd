@@ -1,6 +1,8 @@
 extends CharacterBody3D
 class_name BlackthornOathPlayer
 
+const SILVER_KNIGHT_PATH := "res://assets/models/silver-knight.glb"
+
 signal health_changed(value: int)
 signal died
 
@@ -18,6 +20,9 @@ var slide_timer := 0.0
 
 var hit_shape: CollisionShape3D
 var visual_root: Node3D
+var imported_model: Node3D
+var imported_animation: AnimationPlayer
+var using_imported_model := false
 var torso: MeshInstance3D
 var sword_pivot: Node3D
 var left_arm: Node3D
@@ -68,28 +73,31 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0
 	move_and_slide()
 
-	if forward_speed > 0.0 and is_on_floor() and slide_timer <= 0.0:
-		run_clock += delta * minf(forward_speed, 16.0)
-		var swing := sin(run_clock * 1.55) * 0.52
-		left_leg.rotation.x = swing
-		right_leg.rotation.x = -swing
-		if attack_animation <= 0.0:
-			left_arm.rotation.x = -swing * 0.7
-			right_arm.rotation.x = swing * 0.7
-		visual_root.position.y = absf(sin(run_clock * 3.1)) * 0.055
+	if using_imported_model:
+		_update_imported_animation(delta)
 	else:
-		left_leg.rotation.x = lerpf(left_leg.rotation.x, 0.0, delta * 8.0)
-		right_leg.rotation.x = lerpf(right_leg.rotation.x, 0.0, delta * 8.0)
-		visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.5)
+		if forward_speed > 0.0 and is_on_floor() and slide_timer <= 0.0:
+			run_clock += delta * minf(forward_speed, 16.0)
+			var swing := sin(run_clock * 1.55) * 0.52
+			left_leg.rotation.x = swing
+			right_leg.rotation.x = -swing
+			if attack_animation <= 0.0:
+				left_arm.rotation.x = -swing * 0.7
+				right_arm.rotation.x = swing * 0.7
+			visual_root.position.y = absf(sin(run_clock * 3.1)) * 0.055
+		else:
+			left_leg.rotation.x = lerpf(left_leg.rotation.x, 0.0, delta * 8.0)
+			right_leg.rotation.x = lerpf(right_leg.rotation.x, 0.0, delta * 8.0)
+			visual_root.position.y = move_toward(visual_root.position.y, 0.0, delta * 0.5)
 
-	if attack_animation > 0.0:
-		attack_animation = maxf(0.0, attack_animation - delta)
-		var phase := 1.0 - attack_animation / 0.32
-		right_arm.rotation.x = -1.5 + sin(phase * PI) * 2.5
-		sword_pivot.rotation.z = -0.85 + sin(phase * PI) * 1.7
-	else:
-		right_arm.rotation.x = lerpf(right_arm.rotation.x, 0.0, delta * 10.0)
-		sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.85, delta * 10.0)
+		if attack_animation > 0.0:
+			attack_animation = maxf(0.0, attack_animation - delta)
+			var phase := 1.0 - attack_animation / 0.32
+			right_arm.rotation.x = -1.5 + sin(phase * PI) * 2.5
+			sword_pivot.rotation.z = -0.85 + sin(phase * PI) * 1.7
+		else:
+			right_arm.rotation.x = lerpf(right_arm.rotation.x, 0.0, delta * 10.0)
+			sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.85, delta * 10.0)
 
 	var visible_now := invulnerability <= 0.0 or int(Time.get_ticks_msec() / 85) % 2 == 0
 	visual_root.visible = visible_now
@@ -98,6 +106,64 @@ func _build_character() -> void:
 	visual_root = Node3D.new()
 	add_child(visual_root)
 
+	if ResourceLoader.exists(SILVER_KNIGHT_PATH):
+		var knight_scene: PackedScene = load(SILVER_KNIGHT_PATH) as PackedScene
+		if knight_scene != null:
+			imported_model = knight_scene.instantiate() as Node3D
+			if imported_model != null:
+				imported_model.name = "SilverKnightRigged"
+				visual_root.add_child(imported_model)
+				using_imported_model = true
+				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
+				if not animation_nodes.is_empty():
+					imported_animation = animation_nodes[0] as AnimationPlayer
+				_build_imported_sword()
+				_play_imported_animation("idle")
+				return
+
+	_build_procedural_character()
+
+func _build_imported_sword() -> void:
+	# A separate blade sits against the right hand and is animated during strikes.
+	var steel := _mat(Color(0.56, 0.63, 0.72), 0.94, 0.2)
+	var bronze := _mat(Color(0.54, 0.31, 0.11), 0.82, 0.28)
+	var leather := _mat(Color(0.075, 0.033, 0.025), 0.1, 0.82)
+	sword_pivot = Node3D.new()
+	sword_pivot.position = Vector3(0.52, 0.94, -0.18)
+	sword_pivot.rotation.z = -0.68
+	visual_root.add_child(sword_pivot)
+	_capsule(sword_pivot, Vector3(0, 0.02, 0), 0.045, 0.3, leather)
+	_sphere(sword_pivot, Vector3(0, -0.13, 0), Vector3(0.09, 0.09, 0.09), bronze)
+	_box(sword_pivot, Vector3(0, 0.18, 0), Vector3(0.36, 0.075, 0.1), bronze)
+	_box(sword_pivot, Vector3(0, 0.65, 0), Vector3(0.12, 0.88, 0.04), steel)
+	_sphere(sword_pivot, Vector3(0, 1.12, 0), Vector3(0.06, 0.12, 0.04), steel)
+
+func _play_imported_animation(preferred: String) -> void:
+	if imported_animation == null:
+		return
+	if imported_animation.has_animation(preferred):
+		if imported_animation.current_animation != preferred:
+			imported_animation.play(preferred)
+		return
+	var fallback := "walk_loop" if preferred == "sprint_loop" else "idle"
+	if imported_animation.has_animation(fallback) and imported_animation.current_animation != fallback:
+		imported_animation.play(fallback)
+
+func _update_imported_animation(delta: float) -> void:
+	var desired := "idle"
+	if slide_timer <= 0.0 and not is_on_floor() and imported_animation != null and imported_animation.has_animation("jump"):
+		desired = "jump"
+	elif slide_timer <= 0.0 and forward_speed > 0.1:
+		desired = "sprint_loop"
+	_play_imported_animation(desired)
+	if attack_animation > 0.0:
+		attack_animation = maxf(0.0, attack_animation - delta)
+		var phase := 1.0 - attack_animation / 0.32
+		sword_pivot.rotation.z = -0.68 + sin(phase * PI) * 1.95
+	else:
+		sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.68, delta * 10.0)
+
+func _build_procedural_character() -> void:
 	var armor := _mat(Color(0.105, 0.12, 0.15), 0.82, 0.35)
 	var dark_steel := _mat(Color(0.035, 0.045, 0.06), 0.92, 0.3)
 	var leather := _mat(Color(0.13, 0.055, 0.035), 0.1, 0.8)
@@ -225,7 +291,13 @@ func _set_sliding(enabled: bool) -> void:
 	var capsule := hit_shape.shape as CapsuleShape3D
 	capsule.height = sliding_height if enabled else standing_height
 	hit_shape.position.y = capsule.height * 0.5
-	visual_root.scale.y = 0.58 if enabled else 1.0
+	visual_root.scale.y = 0.62 if enabled else 1.0
+	if using_imported_model:
+		if sword_pivot != null:
+			sword_pivot.visible = not enabled
+		if enabled:
+			_play_imported_animation("idle")
+		return
 	left_arm.visible = not enabled
 	right_arm.visible = not enabled
 	left_leg.visible = not enabled
