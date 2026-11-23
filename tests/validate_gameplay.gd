@@ -21,6 +21,25 @@ func _run_gameplay_checks() -> void:
 		quit(1)
 		return
 
+	# Economy regression: kill rewards, persistent wallet, armoury purchase,
+	# and the purchased weapon stat must all stay connected.
+	var wallet_before: int = scene.coin_wallet
+	scene.add_kill()
+	if scene.coin_wallet != wallet_before + 5:
+		push_error("GAMEPLAY_TEST: kill did not award five coins")
+		scene.queue_free()
+		quit(11)
+		return
+	scene.coin_wallet = 100
+	scene._buy_upgrade("blade")
+	if scene.coin_wallet != 20 or player.attack_power != 2 or scene.blade_level != 1:
+		push_error("GAMEPLAY_TEST: armoury blade purchase did not apply and persist")
+		scene.queue_free()
+		quit(12)
+		return
+	player.attack_power = 1
+	print("GAMEPLAY_ECONOMY_OK wallet=", scene.coin_wallet, " blade_level=", scene.blade_level)
+
 	var enemy := BlackthornOathEnemy.new()
 	enemy.configure(BlackthornOathEnemy.EnemyType.HOLLOW_GUARD)
 	enemy.position = player.position + Vector3(0.0, 0.0, -5.0)
