@@ -76,6 +76,7 @@ func _run_gameplay_checks() -> void:
 		return
 	print("GAMEPLAY_INVENTORY_OK healing_flask=consumed")
 
+	player.attack_power = 1
 	var enemy := BlackthornOathEnemy.new()
 	enemy.configure(BlackthornOathEnemy.EnemyType.HOLLOW_GUARD)
 	enemy.position = player.position + Vector3(0.0, 0.0, -5.0)
