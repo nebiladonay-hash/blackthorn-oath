@@ -98,6 +98,10 @@ jobs:
           export/android/shutdown_adb_on_exit = true
           EOF
 
+      - name: Download external CC0 cathedral asset
+        shell: bash
+        run: bash scripts/download_assets.sh
+
       - name: Import project and reject script errors
         shell: bash
         run: |
