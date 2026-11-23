@@ -83,6 +83,7 @@ func _ready() -> void:
 	_build_interface()
 	_build_ashfall()
 	_start_soundtrack()
+	_load_sfx_library()
 	for i in range(7):
 		_spawn_segment(-float(i) * SEGMENT_LENGTH)
 	_update_hud()
@@ -687,6 +688,61 @@ func _build_ashfall() -> void:
 	ash_particles.mesh = fleck
 	ash_particles.material_override = fleck_material
 	add_child(ash_particles)
+
+var sfx_library: Dictionary = {}
+var sfx_rng := RandomNumberGenerator.new()
+
+func _load_sfx_library() -> void:
+	sfx_rng.randomize()
+	sfx_library = {"sword": [], "impact": [], "footstep": [], "creature": [], "pickup": []}
+	_scan_sfx_directory("res://audio/sfx")
+	for kind in sfx_library.keys():
+		print("SFX_LIBRARY ", kind, " count=", (sfx_library[kind] as Array).size())
+
+func _scan_sfx_directory(path: String) -> void:
+	var directory := DirAccess.open(path)
+	if directory == null:
+		return
+	for file_name in directory.get_files():
+		var extension := file_name.get_extension().to_lower()
+		if extension not in ["wav", "ogg", "mp3"]:
+			continue
+		var stream := load(path.path_join(file_name)) as AudioStream
+		if stream == null:
+			continue
+		var normalized := file_name.to_lower()
+		var category := ""
+		if normalized.contains("sword") or normalized.contains("swoosh") or normalized.contains("swish") or normalized.contains("swing") or normalized.contains("slash") or normalized.contains("weapon"):
+			category = "sword"
+		elif normalized.contains("step") or normalized.contains("foot") or normalized.contains("walk") or normalized.contains("run"):
+			category = "footstep"
+		elif normalized.contains("growl") or normalized.contains("roar") or normalized.contains("snarl") or normalized.contains("monster") or normalized.contains("ogre") or normalized.contains("grunt"):
+			category = "creature"
+		elif normalized.contains("coin") or normalized.contains("collect") or normalized.contains("pickup") or normalized.contains("item"):
+			category = "pickup"
+		elif normalized.contains("hit") or normalized.contains("impact") or normalized.contains("clash") or normalized.contains("metal") or normalized.contains("block") or normalized.contains("punch"):
+			category = "impact"
+		if category != "":
+			(sfx_library[category] as Array).append(stream)
+	for subdirectory in directory.get_directories():
+		_scan_sfx_directory(path.path_join(subdirectory))
+
+func play_sfx(kind: String, world_position: Vector3 = Vector3.ZERO) -> void:
+	var candidates: Array = sfx_library.get(kind, [])
+	if candidates.is_empty():
+		return
+	var stream := candidates[sfx_rng.randi_range(0, candidates.size() - 1)] as AudioStream
+	if stream == null:
+		return
+	var source := AudioStreamPlayer3D.new()
+	source.stream = stream
+	source.volume_db = -5.0 if kind == "impact" else -8.0
+	source.unit_size = 8.0
+	source.max_distance = 36.0
+	source.position = world_position
+	add_child(source)
+	source.finished.connect(source.queue_free)
+	source.play()
 
 func _start_soundtrack() -> void:
 	var audio_stream := load(SCORE_PATH) as AudioStreamWAV
