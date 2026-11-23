@@ -1196,7 +1196,7 @@ func _resume_run() -> void:
 	paused = false
 	get_tree().paused = false
 	modal_panel.hide()
-	pause_button.text = "Ⅱ"
+	pause_button.text = ""
 
 func _on_modal_action_pressed() -> void:
 	if game_over:
