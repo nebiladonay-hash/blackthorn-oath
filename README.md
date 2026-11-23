@@ -1,5 +1,12 @@
 # BLACKTHORN OATH
 
+## Production engine decision — Godot
+
+Godot 4.x is the authoritative production engine for Blackthorn Oath. Continue development from this existing project on `main`; do not port gameplay to Unreal or Unity and do not replace the current project structure. The experimental Unreal migration branch is not part of the production game.
+
+The existing Godot implementation, scenes, scripts, downloaded asset manifest, cinematic, combat loop, procedural track and Android workflow are the source of truth. All new gameplay work must preserve those systems and improve them incrementally. Use the existing Godot CI workflow for import, headless checks, screenshots and Android builds; never claim a successful build without a completed workflow run.
+
+
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
 ## Prototype 0.5.0 — Gameplay Foundation Fix
