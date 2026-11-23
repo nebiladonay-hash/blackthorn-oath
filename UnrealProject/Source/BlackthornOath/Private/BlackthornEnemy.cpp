@@ -1,6 +1,7 @@
 #include "BlackthornEnemy.h"
 
 #include "BlackthornOathCharacter.h"
+#include "BlackthornGameMode.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
@@ -121,6 +122,13 @@ float ABlackthornEnemy::TakeDamage(float DamageAmount, FDamageEvent const& Damag
         bIsDead = true;
         SetActorEnableCollision(false);
         OnEnemyDeath();
+        if (UWorld* World = GetWorld())
+        {
+            if (ABlackthornGameMode* GameMode = World->GetAuthGameMode<ABlackthornGameMode>())
+            {
+                GameMode->AddKill();
+            }
+        }
         SetLifeSpan(1.8f);
     }
 
