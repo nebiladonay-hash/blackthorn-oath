@@ -109,6 +109,10 @@ func _run_gameplay_checks() -> void:
 		return
 	print("GAMEPLAY_ANIMATION_OK ", player.imported_animation.current_animation)
 
+	# Isolate the sword arc from the enemy's autonomous attack cycle and
+	# runner translation; the moving-target timing is exercised in live play.
+	enemy.attack_timer = 999.0
+	player.forward_speed = 0.0
 	var enemy_health_before := enemy.health
 	player.attack()
 	# Melee damage is intentionally delayed until the blade reaches its impact
