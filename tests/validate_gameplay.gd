@@ -213,7 +213,7 @@ func _run_gameplay_checks() -> void:
 		return
 	player.global_position.z = boss.global_position.z + 2.8
 	var health_before_slam: int = player.health
-	boss._process(0.8)
+	boss._process(0.9)
 	if player.health != health_before_slam - 1:
 		push_error("GAMEPLAY_TEST: warned boss strike failed to hit a player who stayed in its lane")
 		scene.queue_free()
