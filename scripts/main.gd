@@ -5,6 +5,7 @@ const EnemyScript = preload("res://scripts/enemy.gd")
 const HazardScript = preload("res://scripts/hazard.gd")
 const RelicScript = preload("res://scripts/relic.gd")
 const SCORE_PATH := "res://audio/blackthorn_cinematic_ambience.wav"
+const CATHEDRAL_MODEL_PATH := "res://assets/models/generic-gothic-cathedral.glb"
 
 const LANE_WIDTH: float = 2.6
 const SEGMENT_LENGTH: float = 32.0
@@ -160,15 +161,15 @@ void fragment() {
 """
 	stone_material = ShaderMaterial.new()
 	stone_material.shader = stone_shader
-	stone_material.set_shader_parameter("base_tint", Color(0.25, 0.23, 0.24, 1.0))
+	stone_material.set_shader_parameter("base_tint", Color(0.37, 0.34, 0.32, 1.0))
 	stone_material.set_shader_parameter("roughness_value", 0.92)
 	dark_stone_material = ShaderMaterial.new()
 	dark_stone_material.shader = stone_shader
-	dark_stone_material.set_shader_parameter("base_tint", Color(0.095, 0.085, 0.10, 1.0))
+	dark_stone_material.set_shader_parameter("base_tint", Color(0.16, 0.145, 0.16, 1.0))
 	dark_stone_material.set_shader_parameter("roughness_value", 0.96)
 	worn_stone_material = ShaderMaterial.new()
 	worn_stone_material.shader = stone_shader
-	worn_stone_material.set_shader_parameter("base_tint", Color(0.34, 0.28, 0.24, 1.0))
+	worn_stone_material.set_shader_parameter("base_tint", Color(0.46, 0.39, 0.32, 1.0))
 	worn_stone_material.set_shader_parameter("roughness_value", 0.9)
 
 	metal_material = _standard_material(Color(0.13, 0.145, 0.18), 0.88, 0.27)
@@ -210,26 +211,26 @@ func _build_environment() -> void:
 	sky.sky_material = sky_material
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.37, 0.33, 0.45)
-	environment.ambient_light_energy = 0.78
+	environment.ambient_light_color = Color(0.52, 0.50, 0.58)
+	environment.ambient_light_energy = 1.15
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.65
 	environment.glow_bloom = 0.12
 	environment.glow_hdr_threshold = 0.92
 	environment.fog_enabled = true
-	environment.fog_light_color = Color(0.105, 0.048, 0.06)
-	environment.fog_density = 0.0048
+	environment.fog_light_color = Color(0.15, 0.105, 0.12)
+	environment.fog_density = 0.0027
 	environment.adjustment_enabled = true
-	environment.adjustment_contrast = 1.12
-	environment.adjustment_saturation = 0.82
+	environment.adjustment_contrast = 1.08
+	environment.adjustment_saturation = 0.91
 	world.environment = environment
 	add_child(world)
 
 	var moonlight := DirectionalLight3D.new()
 	moonlight.rotation_degrees = Vector3(-35, -28, 0)
-	moonlight.light_color = Color(0.59, 0.63, 0.83)
-	moonlight.light_energy = 1.18
+	moonlight.light_color = Color(0.76, 0.79, 0.92)
+	moonlight.light_energy = 1.8
 	moonlight.shadow_enabled = true
 	moonlight.directional_shadow_max_distance = 95.0
 	moonlight.shadow_bias = 0.035
@@ -254,7 +255,7 @@ func _build_player_and_camera() -> void:
 	camera = Camera3D.new()
 	camera.name = "CinematicCamera"
 	camera.current = true
-	camera.fov = 48.0
+	camera.fov = 43.0
 	camera.near = 0.08
 	camera.far = 320.0
 	camera.position = Vector3(22.0, 15.5, 20.0)
@@ -262,145 +263,94 @@ func _build_player_and_camera() -> void:
 	camera.look_at(Vector3(0, 15.0, -108.0), Vector3.UP)
 
 func _build_cathedral_landmark() -> void:
-	var facade_z: float = -112.0
-	var facade := Node3D.new()
-	facade.name = "TheLastCathedral"
-	facade.position.z = facade_z
-	add_child(facade)
+	# A full-scale cathedral mesh anchors the skyline. The foreground gatehouse is
+	# kept separate so the Bell Warden is visible through the open portal.
+	var cathedral_added := false
+	if ResourceLoader.exists(CATHEDRAL_MODEL_PATH):
+		var cathedral_scene: PackedScene = load(CATHEDRAL_MODEL_PATH) as PackedScene
+		if cathedral_scene != null:
+			var cathedral: Node3D = cathedral_scene.instantiate() as Node3D
+			cathedral.name = "ImportedGothicCathedral"
+			cathedral.position = Vector3(0, 0, -158)
+			cathedral.scale = Vector3(0.48, 0.48, 0.48)
+			cathedral.rotation.y = PI
+			add_child(cathedral)
+			cathedral_added = true
+	if not cathedral_added:
+		_build_cathedral_fallback()
 
-	# Main nave: layered stone masses, buttresses, cornices and upper rose window.
-	_box(facade, Vector3(0, 12.0, 0), Vector3(19.0, 23.0, 4.5), dark_stone_material)
-	_box(facade, Vector3(0, 23.55, 0.05), Vector3(20.2, 0.5, 5.2), stone_material)
-	_box(facade, Vector3(0, 2.2, -0.2), Vector3(20.5, 4.2, 5.5), stone_material)
-	_box(facade, Vector3(0, 1.05, 0.0), Vector3(23.0, 1.3, 7.0), worn_stone_material)
+	var gatehouse := Node3D.new()
+	gatehouse.name = "OuterGateOfTheLastCathedral"
+	gatehouse.position.z = -94.0
+	add_child(gatehouse)
 
+	# Two monumental piers and a pointed arch frame the open approach.
 	for side_index in range(2):
 		var side: float = -1.0 if side_index == 0 else 1.0
-		_add_cathedral_tower(facade, side * 12.0, 0.0, 31.0, 7.0)
-		_box(facade, Vector3(side * 8.2, 10.5, 0.0), Vector3(2.2, 19.0, 5.4), stone_material)
-		_box(facade, Vector3(side * 9.7, 11.0, 0.0), Vector3(1.0, 21.0, 6.0), dark_stone_material)
-		_box(facade, Vector3(side * 8.2, 20.4, 0.0), Vector3(2.7, 0.7, 6.1), worn_stone_material)
-		_add_front_gothic_arch(facade, Vector3(side * 5.1, 4.2, -2.32), 4.7, 8.4, 0.7, worn_stone_material)
-		_box(facade, Vector3(side * 5.1, 8.15, -2.25), Vector3(3.4, 4.3, 0.12), glass_material)
-		_box(facade, Vector3(side * 5.1, 8.1, -2.36), Vector3(0.12, 5.3, 0.15), gold_material)
-		_box(facade, Vector3(side * 5.1, 8.0, -2.36), Vector3(3.7, 0.12, 0.15), gold_material)
-		_add_buttress(facade, side * 8.9, 0.0, 0.0, 16.0)
-		_add_buttress(facade, side * 8.9, 0.0, -1.8, 16.0)
+		var x: float = side * 7.1
+		_box(gatehouse, Vector3(x, 8.4, 0), Vector3(2.0, 16.8, 2.2), dark_stone_material)
+		_box(gatehouse, Vector3(x, 0.55, -0.08), Vector3(2.8, 1.1, 3.0), worn_stone_material)
+		_box(gatehouse, Vector3(x, 16.7, -0.05), Vector3(3.0, 0.7, 3.1), worn_stone_material)
+		_box(gatehouse, Vector3(x, 17.3, -0.05), Vector3(2.45, 0.16, 2.6), gold_material)
+		_make_spire(gatehouse, Vector3(x, 17.3, 0.0), 5.2, 0.64, metal_material)
+		_add_brazier(gatehouse, side * 8.3, 2.6, -0.8)
+	_add_front_gothic_arch(gatehouse, Vector3(0, 0.05, -0.6), 14.2, 18.0, 1.25, worn_stone_material)
+	_box(gatehouse, Vector3(0, 17.65, -0.58), Vector3(9.8, 0.72, 1.4), dark_stone_material)
+	_box(gatehouse, Vector3(0, 18.1, -0.58), Vector3(8.8, 0.14, 1.5), gold_material)
 
-	# Grand central entrance: two independently hinged iron-bound gates.
-	_add_front_gothic_arch(facade, Vector3(0, 1.6, -2.42), 7.2, 13.8, 0.8, worn_stone_material)
-	var gate_wood := _standard_material(Color(0.038, 0.018, 0.024), 0.36, 0.58)
+	# Two independently hinged leaves leave a wide sight line into the cathedral.
+	var gate_wood := _standard_material(Color(0.055, 0.028, 0.028), 0.46, 0.55)
 	cathedral_gate_left = Node3D.new()
-	cathedral_gate_left.position = Vector3(-3.0, 0.0, -2.65)
-	facade.add_child(cathedral_gate_left)
+	cathedral_gate_left.position = Vector3(-3.15, 0, -1.15)
+	gatehouse.add_child(cathedral_gate_left)
 	cathedral_gate_right = Node3D.new()
-	cathedral_gate_right.position = Vector3(3.0, 0.0, -2.65)
-	facade.add_child(cathedral_gate_right)
+	cathedral_gate_right.position = Vector3(3.15, 0, -1.15)
+	gatehouse.add_child(cathedral_gate_right)
 	for gate_side in range(2):
 		var gate: Node3D = cathedral_gate_left if gate_side == 0 else cathedral_gate_right
-		var panel_center: float = 1.5 if gate_side == 0 else -1.5
-		_box(gate, Vector3(panel_center, 6.65, 0.0), Vector3(3.0, 13.3, 0.3), gate_wood)
+		var panel_center: float = 1.55 if gate_side == 0 else -1.55
+		_box(gate, Vector3(panel_center, 6.5, 0), Vector3(3.1, 13.0, 0.34), gate_wood)
 		for rail_index in range(8):
-			var rail_y: float = 0.9 + float(rail_index) * 1.65
-			_box(gate, Vector3(panel_center, rail_y, -0.19), Vector3(2.85, 0.11, 0.12), gold_material)
+			var rail_y: float = 0.65 + float(rail_index) * 1.65
+			_box(gate, Vector3(panel_center, rail_y, -0.22), Vector3(3.0, 0.13, 0.16), gold_material)
 		for rib_index in range(4):
-			var rib_x: float = panel_center - 1.05 + float(rib_index) * 0.7
-			_box(gate, Vector3(rib_x, 6.7, -0.2), Vector3(0.12, 12.8, 0.12), metal_material)
-		_box(gate, Vector3(panel_center, 6.7, -0.28), Vector3(0.5, 1.8, 0.12), gold_material)
-	_add_front_gothic_arch(facade, Vector3(0, 10.9, -2.7), 5.4, 6.6, 0.25, gold_material)
-	_add_gate_guardian(facade)
+			var rib_x: float = panel_center - 1.12 + float(rib_index) * 0.75
+			_box(gate, Vector3(rib_x, 6.5, -0.25), Vector3(0.14, 12.7, 0.15), metal_material)
+		_box(gate, Vector3(panel_center, 6.6, -0.34), Vector3(0.52, 1.8, 0.14), gold_material)
 
-	# Rose window and stained-glass halo.
-	var rose := MeshInstance3D.new()
-	var rose_mesh := TorusMesh.new()
-	rose_mesh.inner_radius = 1.55
-	rose_mesh.outer_radius = 1.82
-	rose_mesh.rings = 16
-	rose_mesh.ring_segments = 48
-	rose.mesh = rose_mesh
-	rose.position = Vector3(0, 19.0, -2.5)
-	rose.material_override = gold_material
-	facade.add_child(rose)
-	var inner_rose := MeshInstance3D.new()
-	var inner_mesh := TorusMesh.new()
-	inner_mesh.inner_radius = 0.82
-	inner_mesh.outer_radius = 1.0
-	inner_mesh.rings = 12
-	inner_mesh.ring_segments = 36
-	inner_rose.mesh = inner_mesh
-	inner_rose.position = Vector3(0, 19.0, -2.52)
-	inner_rose.material_override = ember_material
-	facade.add_child(inner_rose)
-	_box(facade, Vector3(0, 19.0, -2.53), Vector3(0.12, 3.35, 0.12), gold_material)
-	_box(facade, Vector3(0, 19.0, -2.53), Vector3(3.35, 0.12, 0.12), gold_material)
-	_box(facade, Vector3(0, 19.0, -2.54), Vector3(2.55, 0.08, 0.1), glass_material)
-	_box(facade, Vector3(0, 19.0, -2.54), Vector3(0.08, 2.55, 0.1), glass_material)
-
-	# Roofline and spines rise behind the facade.
-	var roof := MeshInstance3D.new()
-	var roof_mesh := PrismMesh.new()
-	roof_mesh.size = Vector3(20.0, 6.0, 6.0)
-	roof.mesh = roof_mesh
-	roof.position = Vector3(0, 26.2, 1.0)
-	roof.material_override = dark_stone_material
-	facade.add_child(roof)
-	for spike_index in range(9):
-		var x: float = -8.0 + float(spike_index) * 2.0
-		_make_spire(facade, Vector3(x, 26.4, -0.8), 3.0, 0.42, metal_material)
-
-	# Two monumental statues guard the gate.
-	_add_cathedral_sentinel(facade, -6.1)
-	_add_cathedral_sentinel(facade, 6.1)
-
-	# Broad approach steps make the cathedral feel grounded in the world.
-	for step_index in range(8):
-		var step_width: float = 15.5 + float(step_index) * 1.5
-		var step_depth: float = 1.0 + float(step_index) * 0.18
-		_box(facade, Vector3(0, 0.3 + float(step_index) * 0.13, 1.5 + float(step_index) * 1.1), Vector3(step_width, 0.42, step_depth), worn_stone_material, true)
-
-	# A dim pulse waits behind the gate until the cinematic reveal.
+	_add_gate_guardian(gatehouse)
 	portal_light = OmniLight3D.new()
-	portal_light.position = Vector3(0, 5.0, -6.6)
-	portal_light.light_color = Color(0.82, 0.045, 0.018)
+	portal_light.position = Vector3(0, 7.0, -5.4)
+	portal_light.light_color = Color(0.92, 0.10, 0.025)
 	portal_light.light_energy = 0.28
-	portal_light.omni_range = 23.0
-	facade.add_child(portal_light)
+	portal_light.omni_range = 27.0
+	gatehouse.add_child(portal_light)
 
-func _add_gate_guardian(parent: Node3D) -> void:
-	gate_guardian = Node3D.new()
-	gate_guardian.name = "TheBellWarden"
-	gate_guardian.position = Vector3(0, 0, -8.4)
-	gate_guardian.visible = false
-	parent.add_child(gate_guardian)
-	var black_iron := _standard_material(Color(0.022, 0.025, 0.035), 0.94, 0.22)
-	var dark_bone := _standard_material(Color(0.12, 0.095, 0.095), 0.22, 0.84)
-	var blood_glow := _standard_material(Color(0.74, 0.018, 0.012), 0.1, 0.18, Color(1.0, 0.008, 0.002), 4.5)
-	_box(gate_guardian, Vector3(0, 6.1, 0), Vector3(2.8, 4.2, 1.4), black_iron)
-	_box(gate_guardian, Vector3(0, 7.2, -0.1), Vector3(3.4, 1.1, 1.8), dark_bone)
-	_sphere(gate_guardian, Vector3(0, 8.6, -0.05), Vector3(1.4, 1.55, 1.05), black_iron)
-	_box(gate_guardian, Vector3(0, 8.38, -0.55), Vector3(0.9, 0.22, 0.12), dark_bone)
-	_sphere(gate_guardian, Vector3(-0.3, 8.5, -0.58), Vector3(0.18, 0.12, 0.08), blood_glow)
-	_sphere(gate_guardian, Vector3(0.3, 8.5, -0.58), Vector3(0.18, 0.12, 0.08), blood_glow)
+	# Broad forecourt steps establish a clear approach to the portal.
+	for step_index in range(7):
+		var width: float = 17.0 + float(step_index) * 1.2
+		_box(gatehouse, Vector3(0, 0.16 + float(step_index) * 0.12, 1.0 + float(step_index) * 1.0), Vector3(width, 0.32, 1.1), worn_stone_material, true)
 	for side_index in range(2):
 		var side: float = -1.0 if side_index == 0 else 1.0
-		_box(gate_guardian, Vector3(side * 1.9, 6.25, 0), Vector3(1.05, 3.7, 1.0), black_iron)
-		_capsule(gate_guardian, Vector3(side * 2.0, 4.3, 0), 0.38, 1.5, dark_bone)
-		_box(gate_guardian, Vector3(side * 0.72, 3.1, 0.0), Vector3(0.85, 3.4, 1.0), black_iron)
-		_box(gate_guardian, Vector3(side * 0.8, 1.1, -0.2), Vector3(0.9, 1.8, 1.25), dark_bone)
-		# Crown-like broken horns silhouette the Warden against the portal.
-		var horn := MeshInstance3D.new()
-		var horn_mesh := CylinderMesh.new()
-		horn_mesh.top_radius = 0.025
-		horn_mesh.bottom_radius = 0.28
-		horn_mesh.height = 2.0
-		horn_mesh.radial_segments = 7
-		horn.mesh = horn_mesh
-		horn.position = Vector3(side * 0.58, 9.9, 0.05)
-		horn.rotation.z = side * deg_to_rad(24.0)
-		horn.material_override = black_iron
-		gate_guardian.add_child(horn)
-	_box(gate_guardian, Vector3(1.7, 4.8, -0.35), Vector3(0.18, 6.8, 0.18), metal_material)
-	_box(gate_guardian, Vector3(1.7, 7.2, -0.35), Vector3(1.6, 0.42, 0.3), black_iron)
+		_box(gatehouse, Vector3(side * 10.0, 2.0, -7.0), Vector3(2.2, 4.0, 1.1), dark_stone_material)
+		_box(gatehouse, Vector3(side * 11.0, 5.0, -7.0), Vector3(3.0, 0.55, 1.5), worn_stone_material)
+
+func _build_cathedral_fallback() -> void:
+	var fallback := Node3D.new()
+	fallback.name = "ProceduralCathedralFallback"
+	fallback.position.z = -158.0
+	add_child(fallback)
+	for side_index in range(2):
+		var side: float = -1.0 if side_index == 0 else 1.0
+		var x: float = side * 11.0
+		_box(fallback, Vector3(x, 17.0, 0), Vector3(8.0, 34.0, 12.0), dark_stone_material)
+		_box(fallback, Vector3(x, 34.0, -5.4), Vector3(8.5, 1.0, 1.5), worn_stone_material)
+		_make_spire(fallback, Vector3(x, 34.0, 0), 18.0, 2.6, gold_material)
+		_add_buttress(fallback, side * 7.0, 0, 2.0, 25.0)
+	_box(fallback, Vector3(0, 29.0, 0), Vector3(17.0, 10.0, 10.0), dark_stone_material)
+	_box(fallback, Vector3(0, 34.0, -5.4), Vector3(18.0, 0.8, 1.3), worn_stone_material)
+	_make_spire(fallback, Vector3(0, 34.0, 0), 16.0, 1.8, metal_material)
+
 
 func _add_cathedral_tower(parent: Node3D, x: float, base_y: float, height: float, width: float) -> void:
 	var tower := Node3D.new()
@@ -493,32 +443,67 @@ func _build_distant_silhouette() -> void:
 	var horizon := Node3D.new()
 	horizon.name = "AshenHorizon"
 	add_child(horizon)
-	var ridge_material := _standard_material(Color(0.022, 0.018, 0.035), 0.0, 1.0)
-	for row in range(3):
-		var z: float = -42.0 - float(row) * 28.0
-		for peak_index in range(9):
-			var side: float = -1.0 if peak_index % 2 == 0 else 1.0
-			var x: float = side * (18.0 + float(peak_index / 2) * 7.0)
-			var height: float = 12.0 + float((peak_index * 7 + row * 3) % 15)
-			var peak := MeshInstance3D.new()
-			var mesh := CylinderMesh.new()
-			mesh.top_radius = 0.03
-			mesh.bottom_radius = 7.5 + float(peak_index % 4)
-			mesh.height = height
-			mesh.radial_segments = 7
-			peak.mesh = mesh
-			peak.position = Vector3(x, height * 0.5 - 2.0, z - float(peak_index % 3) * 5.0)
-			peak.material_override = ridge_material
-			horizon.add_child(peak)
 
-	# Far watchtowers puncture the fog beyond the cathedral.
+	# Continuous surrounding ground removes the empty void around the road.
+	var earth := MeshInstance3D.new()
+	var earth_mesh := PlaneMesh.new()
+	earth_mesh.size = Vector2(230.0, 390.0)
+	earth.mesh = earth_mesh
+	earth.position = Vector3(0, -1.25, -150.0)
+	earth.material_override = _standard_material(Color(0.075, 0.065, 0.075), 0.05, 0.97)
+	horizon.add_child(earth)
+
+	var ridge_material := _standard_material(Color(0.075, 0.068, 0.09), 0.03, 0.98)
+	_build_mountain_ridge(horizon, -1.0, ridge_material)
+	_build_mountain_ridge(horizon, 1.0, ridge_material)
+
+	# Watchtowers puncture the ridgeline at different depths.
 	for side_index in range(2):
 		var side: float = -1.0 if side_index == 0 else 1.0
 		for tower_index in range(3):
-			var tower_z: float = -72.0 - float(tower_index) * 23.0
-			var tower_x: float = side * (22.0 + float(tower_index) * 5.0)
-			_box(horizon, Vector3(tower_x, 7.0, tower_z), Vector3(3.4, 14.0, 3.4), ridge_material)
-			_make_spire(horizon, Vector3(tower_x, 14.0, tower_z), 9.0, 2.6, ridge_material)
+			var tower_z: float = -62.0 - float(tower_index) * 42.0
+			var tower_x: float = side * (27.0 + float(tower_index) * 4.0)
+			_box(horizon, Vector3(tower_x, 7.0, tower_z), Vector3(3.2, 14.0, 3.2), dark_stone_material)
+			_box(horizon, Vector3(tower_x, 14.0, tower_z), Vector3(4.4, 0.7, 4.4), worn_stone_material)
+			_make_spire(horizon, Vector3(tower_x, 14.2, tower_z), 8.0, 1.5, metal_material)
+
+func _build_mountain_ridge(parent: Node3D, side: float, material: Material) -> void:
+	var surface := SurfaceTool.new()
+	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var points: Array = []
+	var x_steps: int = 36
+	var z_steps: int = 24
+	for z_index in range(z_steps + 1):
+		var row: Array = []
+		var depth: float = 22.0 + float(z_index) * 10.5
+		for x_index in range(x_steps + 1):
+			var u: float = float(x_index) / float(x_steps)
+			var x_distance: float = 12.0 + u * 58.0
+			var broad: float = sin(u * PI * 2.6 + side * 0.7) * 4.0
+			var sharp: float = pow(maxf(0.0, sin(u * PI * 7.0 + side * 1.8)), 3.0) * 12.0
+			var broken: float = sin(u * 41.0 + float(z_index) * 0.31) * 1.4
+			var height: float = 7.0 + broad + sharp + broken - float(z_index) * 0.06
+			row.append(Vector3(side * x_distance, height, -depth))
+		points.append(row)
+	for z_index in range(z_steps):
+		for x_index in range(x_steps):
+			var a: Vector3 = points[z_index][x_index]
+			var b: Vector3 = points[z_index][x_index + 1]
+			var c_point: Vector3 = points[z_index + 1][x_index]
+			var d: Vector3 = points[z_index + 1][x_index + 1]
+			if side > 0.0:
+				surface.add_vertex(a); surface.add_vertex(c_point); surface.add_vertex(b)
+				surface.add_vertex(b); surface.add_vertex(c_point); surface.add_vertex(d)
+			else:
+				surface.add_vertex(a); surface.add_vertex(b); surface.add_vertex(c_point)
+				surface.add_vertex(b); surface.add_vertex(d); surface.add_vertex(c_point)
+	surface.generate_normals()
+	var ridge := MeshInstance3D.new()
+	ridge.mesh = surface.commit()
+	ridge.material_override = material
+	ridge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	parent.add_child(ridge)
+
 
 func _build_ashfall() -> void:
 	ash_particles = CPUParticles3D.new()
@@ -656,14 +641,15 @@ func _build_interface() -> void:
 	tutorial_label.hide()
 	controls.add_child(tutorial_label)
 
-	menu_panel = _make_overlay_panel(root_ui, Vector2(495, 444))
-	menu_panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
-	menu_panel.position = Vector2(54, -222)
+	menu_panel = _make_overlay_panel(root_ui, Vector2(520, 438))
+	menu_panel.set_anchors_preset(Control.PRESET_CENTER)
+	menu_panel.position = Vector2(-260, -219)
 	var menu_box := VBoxContainer.new()
 	menu_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	menu_box.add_theme_constant_override("separation", 17)
 	menu_panel.add_child(menu_box)
-	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 13, Color(0.8, 0.35, 0.26))
+	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 13, Color(0.8, 0.42, 0.31))
+	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(eyebrow)
 	var title := _label("BLACKTHORN\nOATH", 49, Color(0.95, 0.89, 0.79))
 	title.add_theme_constant_override("line_spacing", -8)
@@ -674,7 +660,8 @@ func _build_interface() -> void:
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var controls_hint := _label("SWIPE  move / jump / slide     •     TAP  strike", 13, Color(0.67, 0.62, 0.64))
 	menu_box.add_child(controls_hint)
-	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 12, Color(0.57, 0.53, 0.56))
+	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 12, Color(0.67, 0.61, 0.61))
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(footer)
 	menu_panel.hide()
 
@@ -705,40 +692,50 @@ func _update_cinematic(delta: float) -> void:
 	intro_elapsed += delta
 	var t: float = intro_elapsed
 	if t < 4.2:
-		var amount: float = _ease((t - 0.0) / 4.2)
-		camera.global_position = Vector3(22.0, 17.0, 23.0).lerp(Vector3(11.0, 11.5, 4.0), amount)
-		camera.look_at(Vector3(0, 15.0, -112.0), Vector3.UP)
+		var amount: float = _ease(t / 4.2)
+		camera.global_position = Vector3(36.0, 31.0, -18.0).lerp(Vector3(24.0, 24.0, -64.0), amount)
+		camera.look_at(Vector3(0, 19.0, -158.0), Vector3.UP)
+		camera.fov = lerpf(44.0, 38.0, amount)
 		_set_cinematic_copy("THE NORTH ONCE KNEW THE SOUND OF BELLS.", "", 0.0)
 	elif t < 8.0:
 		var amount: float = _ease((t - 4.2) / 3.8)
-		camera.global_position = Vector3(11.0, 11.5, 4.0).lerp(Vector3(-9.0, 7.0, -55.0), amount)
-		camera.look_at(Vector3(0, 12.0, -112.0), Vector3.UP)
-		var gate_amount: float = _ease((t - 5.35) / 2.45)
-		cathedral_gate_left.rotation.y = -0.94 * gate_amount
-		cathedral_gate_right.rotation.y = 0.94 * gate_amount
-		gate_guardian.visible = gate_amount > 0.28
-		portal_light.light_energy = 0.28 + gate_amount * 4.4
-		portal_light.light_color = Color(0.82, 0.045, 0.018).lerp(Color(1.0, 0.12, 0.025), gate_amount)
-		var reveal_line: String = "THEN THE BELLS BEGAN TO ANSWER THEMSELVES." if t < 6.4 else "SOMETHING ANSWERED FROM WITHIN."
+		camera.global_position = Vector3(24.0, 24.0, -64.0).lerp(Vector3(7.5, 11.0, -86.0), amount)
+		camera.look_at(Vector3(0, 9.0, -100.0), Vector3.UP)
+		camera.fov = lerpf(38.0, 34.0, amount)
+		var gate_amount: float = _ease((t - 5.1) / 2.55)
+		cathedral_gate_left.rotation.y = -1.12 * gate_amount
+		cathedral_gate_right.rotation.y = 1.12 * gate_amount
+		gate_guardian.visible = gate_amount > 0.24
+		portal_light.light_energy = 0.28 + gate_amount * 5.6
+		portal_light.light_color = Color(0.82, 0.045, 0.018).lerp(Color(1.0, 0.16, 0.035), gate_amount)
+		var reveal_line: String = "THEN THE BELLS BEGAN TO ANSWER THEMSELVES." if t < 6.35 else "SOMETHING ANSWERED FROM WITHIN."
 		_set_cinematic_copy(reveal_line, "", 0.0)
-		if t > 7.35:
-			camera.global_position += Vector3(sin(t * 68.0) * 0.035, cos(t * 54.0) * 0.022, 0.0)
 	elif t < 11.5:
 		var amount: float = _ease((t - 8.0) / 3.5)
-		camera.global_position = Vector3(-9.0, 7.0, -55.0).lerp(Vector3(3.4, 2.7, 0.2), amount)
-		camera.look_at(Vector3(0, 1.45, -3.0), Vector3.UP)
+		camera.global_position = Vector3(7.5, 11.0, -86.0).lerp(Vector3(0.0, 7.0, -88.5), amount)
+		camera.look_at(Vector3(0.0, 6.0, -100.0), Vector3.UP)
+		camera.fov = lerpf(34.0, 30.0, amount)
+		if t > 9.2:
+			camera.global_position += Vector3(sin(t * 18.0) * 0.025, cos(t * 14.0) * 0.018, 0.0)
 		_set_cinematic_copy("THE KINGDOM FELL. THE DEAD REMAINED.", "", 0.0)
 	elif t < 15.0:
 		var amount: float = _ease((t - 11.5) / 3.5)
-		camera.global_position = Vector3(3.4, 2.7, 0.2).lerp(Vector3(0.0, 4.3, 7.4), amount)
-		camera.look_at(Vector3(0, 1.1, -17.0), Vector3.UP)
-		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "BLACKTHORN\nOATH", 1.0)
-	elif t < INTRO_LENGTH:
-		camera.global_position = Vector3(0, 4.3, 7.4).lerp(Vector3(0, 4.15, 7.8), _ease((t - 15.0) / 3.0))
-		camera.look_at(Vector3(0, 1.0, -17.0), Vector3.UP)
-		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN\nOATH", 0.92)
+		# Front-facing hero portrait: show the helm, chest, sword and cape silhouette.
+		camera.global_position = Vector3(2.6, 2.9, -10.5).lerp(Vector3(1.25, 3.2, -9.0), amount)
+		camera.look_at(Vector3(0.0, 1.1, -3.0), Vector3.UP)
+		camera.fov = lerpf(38.0, 42.0, amount)
+		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "BLACKTHORN
+OATH", 1.0)
 	else:
-		_finish_intro()
+		var amount: float = _ease((t - 15.0) / 3.0)
+		camera.global_position = Vector3(0.0, 4.4, 7.2).lerp(Vector3(0.0, 4.6, 8.1), amount)
+		camera.look_at(Vector3(0.0, 1.15, -16.0), Vector3.UP)
+		camera.fov = lerpf(49.0, 46.0, amount)
+		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN
+OATH", 1.0)
+		if t >= INTRO_LENGTH:
+			_finish_intro()
+
 
 func _set_cinematic_copy(subtitle: String, title: String, title_alpha: float) -> void:
 	if subtitle_label.text != subtitle:
@@ -931,35 +928,39 @@ func _spawn_segment(segment_z: float) -> void:
 	segment_serial += 1
 
 func _add_segment_architecture(parent: Node3D, serial: int) -> void:
-	var wall_height: float = 7.2 if serial % 3 != 1 else 5.4
+	# Open-air ruined cloister: spaced arcades replace the solid tunnel walls.
 	for side_index in range(2):
 		var side: float = -1.0 if side_index == 0 else 1.0
-		var wall_x: float = side * 6.25
-		_box(parent, Vector3(wall_x, wall_height * 0.5, -SEGMENT_LENGTH * 0.5), Vector3(0.85, wall_height, SEGMENT_LENGTH), dark_stone_material)
-		_box(parent, Vector3(wall_x, wall_height, -SEGMENT_LENGTH * 0.5), Vector3(1.25, 0.42, SEGMENT_LENGTH), worn_stone_material)
 		for pillar_index in range(4):
-			var pillar_z: float = -3.0 - float(pillar_index) * 8.4
-			_box(parent, Vector3(side * 5.82, wall_height * 0.5, pillar_z), Vector3(0.78, wall_height + 0.45, 1.1), stone_material)
-			_box(parent, Vector3(side * 5.82, 0.3, pillar_z), Vector3(1.2, 0.6, 1.45), worn_stone_material)
-			_box(parent, Vector3(side * 5.82, wall_height, pillar_z), Vector3(1.25, 0.5, 1.4), worn_stone_material)
-			_box(parent, Vector3(side * 5.42, wall_height * 0.53, pillar_z), Vector3(0.28, wall_height * 0.9, 0.38), gold_material)
+			var pillar_z: float = -3.0 - float(pillar_index) * 8.5
+			var x: float = side * 6.15
+			var pillar_height: float = 7.0 if serial % 3 != 1 else 5.8
+			_box(parent, Vector3(x, pillar_height * 0.5, pillar_z), Vector3(0.92, pillar_height, 1.3), dark_stone_material)
+			_box(parent, Vector3(x, 0.28, pillar_z), Vector3(1.45, 0.56, 1.75), worn_stone_material)
+			_box(parent, Vector3(x, pillar_height, pillar_z), Vector3(1.5, 0.48, 1.8), stone_material)
+			_box(parent, Vector3(side * 5.65, pillar_height * 0.58, pillar_z), Vector3(0.18, pillar_height * 0.82, 0.2), gold_material)
 			if serial % 3 == 0 and pillar_index % 2 == 0:
-				_add_brazier(parent, side * 5.15, 1.5, pillar_z - 1.7)
+				_add_brazier(parent, side * 5.35, 1.45, pillar_z - 1.8)
 		if serial % 3 == 1:
-			_add_hanging_banner(parent, side * 5.78, 6.6, -14.0)
+			_add_hanging_banner(parent, side * 5.78, 6.2, -14.0)
 		elif serial % 3 == 2:
 			_add_wall_statue(parent, side * 5.72, 2.8, -19.0)
 		else:
-			_add_broken_column(parent, side * 7.4, wall_height, -23.0)
+			_add_broken_column(parent, side * 7.4, 7.0, -23.0)
 
-	# A few fractured slabs and masonry chunks interrupt the clean road edges.
-	for debris_index in range(5):
+	# Two transverse gothic ribs add rhythm and scale without enclosing the run.
+	for arch_z in [-7.5, -24.5]:
+		_add_front_gothic_arch(parent, Vector3(0, 0.0, arch_z), 12.2, 8.3, 0.8, worn_stone_material)
+
+	# Broken parapets and stone fragments keep the road edges visually grounded.
+	for debris_index in range(7):
 		var side: float = -1.0 if debris_index % 2 == 0 else 1.0
-		var z: float = -3.0 - float(debris_index) * 5.1
-		var rock_size := Vector3(0.55 + float(debris_index % 3) * 0.28, 0.3 + float(debris_index % 2) * 0.25, 0.65)
-		var rock := _box(parent, Vector3(side * (4.55 + float(debris_index % 2) * 0.25), 0.15, z), rock_size, worn_stone_material)
+		var z: float = -2.0 - float(debris_index) * 4.1
+		var rock_size := Vector3(0.65 + float(debris_index % 3) * 0.26, 0.3 + float(debris_index % 2) * 0.25, 0.8)
+		var rock := _box(parent, Vector3(side * (4.9 + float(debris_index % 2) * 0.2), 0.16, z), rock_size, worn_stone_material)
 		rock.rotation.y = float(debris_index) * 0.43
 		rock.rotation.z = -0.12 if debris_index % 2 == 0 else 0.16
+
 
 func _add_segment_props(parent: Node3D, serial: int) -> void:
 	# Suspended iron chains and broken cross-beams appear in alternating bays.
