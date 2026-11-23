@@ -728,7 +728,7 @@ var sfx_rng := RandomNumberGenerator.new()
 
 func _load_sfx_library() -> void:
 	sfx_rng.randomize()
-	sfx_library = {"sword": [], "impact": [], "footstep": [], "creature": [], "pickup": []}
+	sfx_library = {"sword": [], "impact": [], "footstep": [], "creature": []}
 	_load_named_sfx("footstep", [
 		"res://audio/sfx/curated/stone_step_01.ogg",
 		"res://audio/sfx/curated/stone_step_02.ogg"
@@ -737,10 +737,18 @@ func _load_sfx_library() -> void:
 		"res://audio/sfx/curated/steel_impact_01.ogg",
 		"res://audio/sfx/curated/steel_impact_02.ogg"
 	])
-	for index in range(1, 9):
-		_load_named_sfx("sword", ["res://audio/sfx/curated/sword_swing_%02d.wav" % index])
-	# No random coin/UI dings. Relic collection is silent until a deliberately
-	# selected low-frequency relic sound is added and auditioned.
+	_load_named_sfx("sword", [
+		"res://audio/sfx/curated/sword_swing_01.ogg",
+		"res://audio/sfx/curated/sword_swing_02.ogg",
+		"res://audio/sfx/curated/sword_swing_03.ogg"
+	])
+	_load_named_sfx("creature", [
+		"res://audio/sfx/curated/creature_roar_01.ogg",
+		"res://audio/sfx/curated/creature_roar_02.ogg",
+		"res://audio/sfx/curated/creature_roar_03.ogg",
+		"res://audio/sfx/curated/creature_grunt_01.ogg"
+	])
+	# Relic collection is deliberately silent: no arcade coin or confirmation chime.
 	for kind in sfx_library.keys():
 		print("CURATED_SFX ", kind, " variants=", (sfx_library[kind] as Array).size())
 
@@ -769,8 +777,16 @@ func play_sfx(kind: String, world_position: Vector3 = Vector3.ZERO) -> void:
 			source.volume_db = -5.5
 		"footstep":
 			source.volume_db = -11.0
+		"creature":
+			source.volume_db = -9.0
 	source.volume_db += linear_to_db(maxf(effects_volume, 0.001))
-	source.pitch_scale = sfx_rng.randf_range(0.96, 1.035)
+	match kind:
+		"creature":
+			source.pitch_scale = sfx_rng.randf_range(0.88, 0.96)
+		"sword":
+			source.pitch_scale = sfx_rng.randf_range(0.97, 1.025)
+		_:
+			source.pitch_scale = sfx_rng.randf_range(0.96, 1.02)
 	source.unit_size = 7.5
 	source.max_distance = 34.0
 	source.position = world_position
@@ -1312,7 +1328,7 @@ func _rune_button(parent: Control, icon_path: String, hint: String, action: Call
 	if icon_texture != null:
 		button.icon = icon_texture
 		button.expand_icon = true
-		button.icon_max_width = int(float(diameter) * 0.43)
+		button.add_theme_constant_override("icon_max_width", int(float(diameter) * 0.43))
 	button.add_theme_stylebox_override("normal", _rune_style(Color(0.035, 0.041, 0.055, 0.96), diameter, false))
 	button.add_theme_stylebox_override("hover", _rune_style(Color(0.10, 0.061, 0.060, 0.99), diameter, false))
 	button.add_theme_stylebox_override("pressed", _rune_style(Color(0.16, 0.075, 0.066, 1.0), diameter, true))
