@@ -45,6 +45,7 @@ namespace BlackthornOath
         private float attackTimer;
         private float invulnerabilityTimer;
         private float blinkTimer;
+        private float footstepTimer;
         private bool renderersVisible = true;
         private Vector2 swipeStart;
         private bool trackingSwipe;
@@ -107,6 +108,20 @@ namespace BlackthornOath
                 verticalVelocity = -1.5f;
 
             UpdateAnimation();
+
+            if (ForwardSpeed > 0.1f && characterController.isGrounded && slideTimer <= 0f)
+            {
+                footstepTimer -= delta;
+                if (footstepTimer <= 0f)
+                {
+                    footstepTimer = Mathf.Clamp(0.42f - ForwardSpeed * 0.008f, 0.27f, 0.42f);
+                    AudioDirector.Instance?.PlayFootstep();
+                }
+            }
+            else
+            {
+                footstepTimer = 0.08f;
+            }
         }
 
         private void ReadInput()
@@ -254,6 +269,7 @@ namespace BlackthornOath
             laneVelocity = 0f;
             slideTimer = 0f;
             attackTimer = 0f;
+            footstepTimer = 0f;
             invulnerabilityTimer = 0f;
             SetForwardSpeed(12f);
             characterController.enabled = false;
