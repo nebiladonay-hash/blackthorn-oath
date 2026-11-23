@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<defs>
+ <linearGradient id="bg" x2="0" y2="1"><stop stop-color="#080d17"/><stop offset=".52" stop-color="#1d111a"/><stop offset="1" stop-color="#07080c"/></linearGradient>
+ <radialGradient id="ember"><stop stop-color="#f7b17a"/><stop offset=".64" stop-color="#bb5139"/><stop offset="1" stop-color="#541f2a"/></radialGradient>
+ <linearGradient id="type" x2="0" y2="1"><stop stop-color="#f2e5d1"/><stop offset=".5" stop-color="#c8b69f"/><stop offset="1" stop-color="#786a68"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="26"/></filter>
+</defs>
+<rect width="1600" height="900" fill="url(#bg)"/>
+<circle cx="1240" cy="245" r="170" fill="#a94435" opacity=".2" filter="url(#glow)"/>
+<circle cx="1240" cy="245" r="132" fill="url(#ember)" opacity=".68"/>
+<path d="M0 635l120-78 90 34 140-107 105 55 90-44 115 62 130-100 95 37 112-97 107 75 112-70 184 117v381H0z" fill="#0b0d13"/>
+<path d="M930 900V365l110-170 108 170v535z" fill="#12151d"/>
+<path d="M974 900V392l66-102 64 102v508" fill="#20212a"/>
+<path d="M1007 900V479q33-77 66 0v421" fill="#080b12"/>
+<path d="M1040 161l-33 92h66z" fill="#777078"/>
+<path d="M1210 900V530l75-107 75 107v370" fill="#0c1018"/>
+<path d="M1240 900V570l45-66 45 66v330" fill="#171923"/>
+<path d="M1260 900V631q25-50 50 0v269" fill="#080b12"/>
+<path d="M0 720c165-30 236-105 300-184 57-70 119-114 190-94 49 14 68 60 110 53 59-9 82-99 158-133 78-35 138-4 188 38M1600 676c-158-33-224-138-300-168-88-35-128 3-174 55-46 53-95 74-147 54" fill="none" stroke="#18261f" stroke-width="24" stroke-linecap="round"/>
+<path d="M88 755l-46-63 77 26M218 660l-13-80 64 59M364 573l-61-32 81-26M595 527l28-73 29 88M1390 607l67-52-24 87M1517 660l42-72-5 104" fill="none" stroke="#5d4a3d" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M118 220h4M210 300h3M720 152h5M820 230h4" stroke="#e7c39c" stroke-width="4" opacity=".35"/>
+<g transform="translate(150 345)">
+ <path d="M0 0h360" stroke="#bd704f" stroke-width="2" opacity=".75"/>
+ <text x="0" y="122" fill="url(#type)" font-family="Cinzel, Georgia, serif" font-size="108" letter-spacing="8">BLACKTHORN</text>
+ <text x="4" y="222" fill="#d29a79" font-family="Cinzel, Georgia, serif" font-size="70" letter-spacing="26">OATH</text>
+ <path d="M4 257h305" stroke="#73544a" stroke-width="2"/>
+ <text x="4" y="304" fill="#a9a0a2" font-family="Georgia, serif" font-size="22" letter-spacing="6">THE BELLS HAVE FALLEN SILENT</text>
+</g>
+</svg>
