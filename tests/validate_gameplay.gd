@@ -170,11 +170,17 @@ func _run_gameplay_checks() -> void:
 		return
 	var boss_wallet_before: int = scene.coin_wallet
 	var boss_relics_before: int = scene.relic_bank
-	boss.take_damage(11)
-	if boss.health != 1 or boss.is_dead:
-		push_error("GAMEPLAY_TEST: boss damage phase did not preserve remaining health")
+	boss.take_damage(6)
+	if boss.health != 6 or boss.is_dead or not boss.phase_two or boss.damage != 2:
+		push_error("GAMEPLAY_TEST: boss enraged phase did not activate at half health")
 		scene.queue_free()
 		quit(18)
+		return
+	boss.take_damage(5)
+	if boss.health != 1 or boss.is_dead:
+		push_error("GAMEPLAY_TEST: boss damage did not preserve final health point")
+		scene.queue_free()
+		quit(22)
 		return
 	boss.take_damage(1)
 	if not boss.is_dead or not boss.reward_paid:
