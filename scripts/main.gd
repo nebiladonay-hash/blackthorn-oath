@@ -847,7 +847,7 @@ func _build_interface() -> void:
 	menu_panel.hide()
 
 
-modal_panel = _make_overlay_panel(root_ui, Vector2(460, 276))
+	modal_panel = _make_overlay_panel(root_ui, Vector2(460, 276))
 	modal_panel.set_anchors_preset(Control.PRESET_CENTER)
 	modal_panel.position = Vector2(-230, -138)
 	modal_panel.hide()
