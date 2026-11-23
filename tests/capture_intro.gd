@@ -87,7 +87,8 @@ func _capture_intro() -> void:
 		scene._update_cinematic(0.0)
 		if capture_time >= 18.0 and scene.intro_complete:
 			scene._idle_camera(0.5)
-			# The menu fade is decorative; force full opacity for a clean QA still.
+			# Let the actual menu fade finish before capturing its final state.
+			await create_timer(0.75).timeout
 			scene.menu_panel.modulate.a = 1.0
 		await process_frame
 		await RenderingServer.frame_post_draw
