@@ -158,6 +158,7 @@ func _build_character() -> void:
 				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					imported_animation = animation_nodes[0] as AnimationPlayer
+					_copy_shared_combat_animations()
 				# The rigged asset already carries its own weapon. Do not add a second
 				# unrigged blade at world scale; it detached from the hand in the review.
 				sword_pivot = null
@@ -198,6 +199,30 @@ func _fit_imported_model(model: Node3D, target_height: float) -> void:
 	var fit_scale: float = target_height / combined.size.y
 	model.scale = Vector3.ONE * fit_scale
 	model.position.y = -combined.position.y * fit_scale
+
+func _copy_shared_combat_animations() -> void:
+	if imported_animation == null:
+		return
+	var sources := get_tree().get_nodes_in_group("shared_combat_animation_source")
+	if sources.is_empty():
+		push_warning("No shared combat animation source found for player rig.")
+		return
+	var source := sources[0] as AnimationPlayer
+	if source == null:
+		return
+	var library := AnimationLibrary.new()
+	for animation_name in ["sword_attack", "sword_block"]:
+		if source.has_animation(animation_name):
+			# Both assets use the same Mixamo OurRig/Skeleton3D bone paths,
+			# verified by the Godot CI rig-track diagnostics.
+			var animation_copy := source.get_animation(animation_name).duplicate(true) as Animation
+			var error := library.add_animation(animation_name, animation_copy)
+			if error != OK:
+				push_warning("Could not import shared combat animation %s" % animation_name)
+	if not library.get_animation_list().is_empty():
+		if imported_animation.has_animation_library("combat"):
+			imported_animation.remove_animation_library("combat")
+		imported_animation.add_animation_library("combat", library)
 
 func _build_imported_sword() -> void:
 	# A separate blade sits against the right hand and is animated during strikes.
@@ -250,7 +275,7 @@ func _play_imported_animation(preferred: String) -> void:
 		# Match the cycle rate to forward velocity; the root body owns translation.
 		imported_animation.speed_scale = clampf(forward_speed / 3.6, 0.85, 2.25)
 	elif preferred == "attack":
-		imported_animation.speed_scale = 1.0
+		imported_animation.speed_scale = 1.25
 	else:
 		imported_animation.speed_scale = 1.0
 
@@ -417,7 +442,7 @@ func attack() -> void:
 	if attack_cooldown > 0.0 or slide_timer > 0.0:
 		return
 	attack_cooldown = 0.58
-	attack_animation = 0.32
+	attack_animation = 0.62 if using_imported_model else 0.32
 	_play_game_sfx("sword")
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy):
