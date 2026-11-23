@@ -135,28 +135,8 @@ void ABlackthornOathCharacter::TriggerAttack()
     AttackWindowRemaining = 0.32f;
     OnAttackStarted();
 
-    const FVector Start = GetActorLocation() + FVector(0.0f, 0.0f, 75.0f);
-    const FVector End = Start + GetActorForwardVector() * AttackRange;
-    FCollisionQueryParams Params(SCENE_QUERY_STAT(BlackthornMelee), false, this);
-    TArray<FHitResult> Hits;
-
-    const bool bHit = GetWorld()->SweepMultiByChannel(
-        Hits, Start, End, FQuat::Identity, ECC_Pawn,
-        FCollisionShape::MakeSphere(AttackRadius), Params);
-
-    if (bHit)
-    {
-        TSet<AActor*> DamagedActors;
-        for (const FHitResult& Hit : Hits)
-        {
-            AActor* HitActor = Hit.GetActor();
-            if (IsValid(HitActor) && !DamagedActors.Contains(HitActor))
-            {
-                DamagedActors.Add(HitActor);
-                UGameplayStatics::ApplyDamage(HitActor, 1.0f, GetController(), this, nullptr);
-            }
-        }
-    }
+    GetWorldTimerManager().SetTimer(
+        AttackHitTimer, this, &ABlackthornOathCharacter::PerformAttackTrace, 0.12f, false);
 }
 
 float ABlackthornOathCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
@@ -228,6 +208,37 @@ void ABlackthornOathCharacter::ResetForRun()
 void ABlackthornOathCharacter::EndInvulnerability()
 {
     bIsInvulnerable = false;
+}
+
+void ABlackthornOathCharacter::PerformAttackTrace()
+{
+    if (bIsDead)
+    {
+        return;
+    }
+
+    const FVector Start = GetActorLocation() + FVector(0.0f, 0.0f, 75.0f);
+    const FVector End = Start + GetActorForwardVector() * AttackRange;
+    FCollisionQueryParams Params(SCENE_QUERY_STAT(BlackthornMelee), false, this);
+    TArray<FHitResult> Hits;
+
+    const bool bHit = GetWorld()->SweepMultiByChannel(
+        Hits, Start, End, FQuat::Identity, ECC_Pawn,
+        FCollisionShape::MakeSphere(AttackRadius), Params);
+
+    if (bHit)
+    {
+        TSet<AActor*> DamagedActors;
+        for (const FHitResult& Hit : Hits)
+        {
+            AActor* HitActor = Hit.GetActor();
+            if (IsValid(HitActor) && !DamagedActors.Contains(HitActor))
+            {
+                DamagedActors.Add(HitActor);
+                UGameplayStatics::ApplyDamage(HitActor, 1.0f, GetController(), this, nullptr);
+            }
+        }
+    }
 }
 
 void ABlackthornOathCharacter::EndAttack()
