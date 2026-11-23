@@ -11,12 +11,17 @@ func _print_rig_report(scene: Node3D, node_name: String, label: String) -> void:
 	if owner == null:
 		print(label, "_RIG_MISSING")
 		return
-	var model := owner.get("imported_model") as Node3D
-	if model == null:
+	var model: Node3D = null
+	if label == "PLAYER":
+		model = owner.get("imported_model") as Node3D
+	else:
 		model = owner.find_child("RiggedBellWarden", true, false) as Node3D
 	if model == null:
 		print(label, "_MODEL_MISSING")
 		return
+	for animation_node in model.find_children("*", "AnimationPlayer", true, false):
+		var animation_player := animation_node as AnimationPlayer
+		print(label, "_RIG_ANIMATIONS ", animation_player.get_animation_list())
 	for skeleton_node in model.find_children("*", "Skeleton3D", true, false):
 		var skeleton := skeleton_node as Skeleton3D
 		var names := PackedStringArray()
@@ -64,13 +69,15 @@ func _capture_intro() -> void:
 		{"at": 13.2, "name": "03-knight-reveal.png"},
 		{"at": 19.2, "name": "04-title-and-start-screen.png"}
 	]
-	var previous_time: float = 0.0
 	for sample in samples:
 		var capture_time: float = float(sample["at"])
-		await create_timer(maxf(0.0, capture_time - previous_time), false).timeout
-		previous_time = capture_time
+		# Advance the intro deterministically instead of waiting wall-clock seconds.
+		scene.intro_elapsed = capture_time
+		scene._update_cinematic(0.0)
+		if capture_time >= 18.0 and scene.intro_complete:
+			scene._idle_camera(0.5)
 		await process_frame
-		await process_frame
+		await RenderingServer.frame_post_draw
 		var viewport: Viewport = get_root()
 		var image: Image = viewport.get_texture().get_image()
 		var filename: String = str(sample["name"])
@@ -78,9 +85,16 @@ func _capture_intro() -> void:
 		var save_error: Error = image.save_png(target_path)
 		if save_error != OK:
 			push_error("Failed to save visual capture %s: %s" % [filename, error_string(save_error)])
+			scene.queue_free()
+			await process_frame
 			quit(3)
 			return
 		print("VISUAL_CAPTURE_OK ", filename, " ", image.get_width(), "x", image.get_height())
 
 	print("VISUAL_REVIEW_COMPLETE")
-	quit()
+	var soundtrack := scene.get_node_or_null("OriginalDarkFantasyScore") as AudioStreamPlayer
+	if soundtrack != null:
+		soundtrack.stop()
+	scene.queue_free()
+	await process_frame
+	quit(0)
