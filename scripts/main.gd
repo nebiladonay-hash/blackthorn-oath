@@ -729,37 +729,28 @@ var sfx_rng := RandomNumberGenerator.new()
 func _load_sfx_library() -> void:
 	sfx_rng.randomize()
 	sfx_library = {"sword": [], "impact": [], "footstep": [], "creature": [], "pickup": []}
-	_scan_sfx_directory("res://audio/sfx")
+	_load_named_sfx("footstep", [
+		"res://audio/sfx/curated/stone_step_01.ogg",
+		"res://audio/sfx/curated/stone_step_02.ogg"
+	])
+	_load_named_sfx("impact", [
+		"res://audio/sfx/curated/steel_impact_01.ogg",
+		"res://audio/sfx/curated/steel_impact_02.ogg"
+	])
+	for index in range(1, 9):
+		_load_named_sfx("sword", ["res://audio/sfx/curated/sword_swing_%02d.wav" % index])
+	# No random coin/UI dings. Relic collection is silent until a deliberately
+	# selected low-frequency relic sound is added and auditioned.
 	for kind in sfx_library.keys():
-		print("SFX_LIBRARY ", kind, " count=", (sfx_library[kind] as Array).size())
+		print("CURATED_SFX ", kind, " variants=", (sfx_library[kind] as Array).size())
 
-func _scan_sfx_directory(path: String) -> void:
-	var directory := DirAccess.open(path)
-	if directory == null:
-		return
-	for file_name in directory.get_files():
-		var extension := file_name.get_extension().to_lower()
-		if extension not in ["wav", "ogg", "mp3"]:
+func _load_named_sfx(category: String, paths: Array[String]) -> void:
+	for path in paths:
+		if not ResourceLoader.exists(path):
 			continue
-		var stream := load(path.path_join(file_name)) as AudioStream
-		if stream == null:
-			continue
-		var normalized := file_name.to_lower()
-		var category := ""
-		if normalized.contains("sword") or normalized.contains("swoosh") or normalized.contains("swish") or normalized.contains("swing") or normalized.contains("slash") or normalized.contains("weapon"):
-			category = "sword"
-		elif normalized.contains("step") or normalized.contains("foot") or normalized.contains("walk") or normalized.contains("run") or normalized.contains("chainmail") or normalized.contains("armor-light"):
-			category = "footstep"
-		elif normalized.contains("growl") or normalized.contains("roar") or normalized.contains("snarl") or normalized.contains("monster") or normalized.contains("ogre") or normalized.contains("giant") or normalized.contains("bite") or normalized.contains("grunt"):
-			category = "creature"
-		elif normalized.contains("coin") or normalized.contains("collect") or normalized.contains("pickup") or normalized.contains("item"):
-			category = "pickup"
-		elif normalized.contains("hit") or normalized.contains("impact") or normalized.contains("clash") or normalized.contains("metal") or normalized.contains("block") or normalized.contains("punch"):
-			category = "impact"
-		if category != "":
+		var stream := load(path) as AudioStream
+		if stream != null:
 			(sfx_library[category] as Array).append(stream)
-	for subdirectory in directory.get_directories():
-		_scan_sfx_directory(path.path_join(subdirectory))
 
 func play_sfx(kind: String, world_position: Vector3 = Vector3.ZERO) -> void:
 	var candidates: Array = sfx_library.get(kind, [])
@@ -770,9 +761,18 @@ func play_sfx(kind: String, world_position: Vector3 = Vector3.ZERO) -> void:
 		return
 	var source := AudioStreamPlayer3D.new()
 	source.stream = stream
-	source.volume_db = (-5.0 if kind == "impact" else -8.0) + linear_to_db(maxf(effects_volume, 0.001))
-	source.unit_size = 8.0
-	source.max_distance = 36.0
+	source.volume_db = -10.0
+	match kind:
+		"sword":
+			source.volume_db = -7.0
+		"impact":
+			source.volume_db = -5.5
+		"footstep":
+			source.volume_db = -11.0
+	source.volume_db += linear_to_db(maxf(effects_volume, 0.001))
+	source.pitch_scale = sfx_rng.randf_range(0.96, 1.035)
+	source.unit_size = 7.5
+	source.max_distance = 34.0
 	source.position = world_position
 	add_child(source)
 	source.finished.connect(source.queue_free)
@@ -800,7 +800,7 @@ func _fade_from_black() -> void:
 
 func _build_interface() -> void:
 	var canvas := CanvasLayer.new()
-	canvas.name = "CinematicAndGameUI"
+	canvas.name = "ImmersiveOathInterface"
 	add_child(canvas)
 	root_ui = Control.new()
 	root_ui.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -808,243 +808,233 @@ func _build_interface() -> void:
 	canvas.add_child(root_ui)
 
 	top_letterbox = ColorRect.new()
-	top_letterbox.color = Color(0.008, 0.006, 0.012, 0.95)
+	top_letterbox.color = Color(0.006, 0.007, 0.012, 0.72)
 	top_letterbox.anchor_right = 1.0
-	top_letterbox.offset_bottom = 45.0
+	top_letterbox.offset_bottom = 26.0
 	root_ui.add_child(top_letterbox)
 	bottom_letterbox = ColorRect.new()
-	bottom_letterbox.color = Color(0.008, 0.006, 0.012, 0.95)
+	bottom_letterbox.color = Color(0.006, 0.007, 0.012, 0.72)
 	bottom_letterbox.anchor_top = 1.0
 	bottom_letterbox.anchor_right = 1.0
-	bottom_letterbox.offset_top = -48.0
+	bottom_letterbox.offset_top = -28.0
 	root_ui.add_child(bottom_letterbox)
 
-	intro_kicker_label = _label("A DARK FANTASY RUNNER", 13, Color(0.8, 0.42, 0.28))
+	intro_kicker_label = _label("THE ASHEN KINGDOM  /  CHAPTER I", 12, Color(0.78, 0.58, 0.43))
 	intro_kicker_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	intro_kicker_label.position = Vector2(-160, 76)
-	intro_kicker_label.size = Vector2(320, 25)
+	intro_kicker_label.position = Vector2(-230, 64)
+	intro_kicker_label.size = Vector2(460, 24)
 	intro_kicker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root_ui.add_child(intro_kicker_label)
 
-	intro_title_label = _label("", 54, Color(0.95, 0.88, 0.78))
+	intro_title_label = _heading("", 56, Color(0.95, 0.88, 0.78))
 	intro_title_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	intro_title_label.position = Vector2(-310, 85)
-	intro_title_label.size = Vector2(620, 155)
+	intro_title_label.position = Vector2(-330, 86)
+	intro_title_label.size = Vector2(660, 160)
 	intro_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.92))
-	intro_title_label.add_theme_constant_override("shadow_offset_x", 3)
-	intro_title_label.add_theme_constant_override("shadow_offset_y", 4)
+	intro_title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.96))
+	intro_title_label.add_theme_constant_override("shadow_offset_x", 2)
+	intro_title_label.add_theme_constant_override("shadow_offset_y", 5)
 	intro_title_label.hide()
 	root_ui.add_child(intro_title_label)
 
-	subtitle_label = _label("", 20, Color(0.91, 0.85, 0.79))
+	subtitle_label = _label("", 19, Color(0.88, 0.82, 0.75))
 	subtitle_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
-	subtitle_label.position = Vector2(-560, -118)
-	subtitle_label.size = Vector2(1120, 42)
+	subtitle_label.position = Vector2(-520, -102)
+	subtitle_label.size = Vector2(1040, 38)
 	subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 1))
 	root_ui.add_child(subtitle_label)
 
-	skip_intro_button = _button(root_ui, "SKIP  ›", Vector2(-126, 66), Vector2(102, 42), _skip_intro, Control.PRESET_TOP_RIGHT, 13)
-	skip_intro_button.position = Vector2(-128, 61)
+	skip_intro_button = _rune_button(root_ui, "res://assets/ui/icons/skip.svg", "Skip cinematic", _skip_intro, 58, Control.PRESET_TOP_RIGHT, Vector2(-34, 34))
 
+	# Compact raised status rail: distance and vitality first, economy second.
 	hud = Control.new()
 	hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hud.visible = false
 	root_ui.add_child(hud)
-	var hud_panel := PanelContainer.new()
-	hud_panel.position = Vector2(24, 62)
-	hud_panel.size = Vector2(338, 158)
-	hud_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.018, 0.016, 0.025, 0.76), Color(0.27, 0.17, 0.15), 10))
-	hud.add_child(hud_panel)
-	var stats := VBoxContainer.new()
-	stats.add_theme_constant_override("separation", 5)
-	hud_panel.add_child(stats)
-	score_label = _label("DISTANCE   00000 m      KILLS  00", 17, Color(0.92, 0.86, 0.78))
-	stats.add_child(score_label)
-	health_label = _label("VITALITY   ♥  ♥  ♥", 17, Color(0.88, 0.22, 0.18))
-	stats.add_child(health_label)
-	relic_label = _label("RELICS   000    /    RESERVE  000", 14, Color(0.9, 0.62, 0.25))
-	stats.add_child(relic_label)
-	coin_label = _label("COINS   00000", 14, Color(0.96, 0.75, 0.32))
-	stats.add_child(coin_label)
-	best_label = _label("BEST RUN   00000 m", 13, Color(0.65, 0.63, 0.68))
-	stats.add_child(best_label)
+	var hud_plate := PanelContainer.new()
+	hud_plate.name = "OathStatusRail"
+	hud_plate.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	hud_plate.position = Vector2(30, 34)
+	hud_plate.size = Vector2(440, 104)
+	hud_plate.add_theme_stylebox_override("panel", _panel_style(Color(0.018, 0.022, 0.031, 0.84), Color(0.43, 0.31, 0.24), 8))
+	hud.add_child(hud_plate)
+	var hud_stack := VBoxContainer.new()
+	hud_stack.add_theme_constant_override("separation", 3)
+	hud_plate.add_child(hud_stack)
+	var top_stats := HBoxContainer.new()
+	top_stats.alignment = BoxContainer.ALIGNMENT_CENTER
+	top_stats.add_theme_constant_override("separation", 18)
+	hud_stack.add_child(top_stats)
+	score_label = _heading("00000 m", 26, Color(0.94, 0.87, 0.76))
+	score_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_stats.add_child(score_label)
+	health_label = _label("♥  ♥  ♥", 20, Color(0.78, 0.22, 0.19))
+	health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	top_stats.add_child(health_label)
+	var lower_stats := HBoxContainer.new()
+	lower_stats.add_theme_constant_override("separation", 20)
+	hud_stack.add_child(lower_stats)
+	relic_label = _label("RELICS  000", 12, Color(0.82, 0.65, 0.43))
+	lower_stats.add_child(relic_label)
+	coin_label = _label("COINS  00000", 12, Color(0.85, 0.72, 0.49))
+	lower_stats.add_child(coin_label)
+	best_label = _label("BEST  00000 m", 11, Color(0.59, 0.62, 0.66))
+	lower_stats.add_child(best_label)
 
+	# Touch actions are rune medallions, not oversized text buttons.
 	controls = Control.new()
 	controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	controls.visible = false
 	root_ui.add_child(controls)
-	_button(controls, "‹", Vector2(25, -102), Vector2(74, 72), func(): player.move_lane(-1), Control.PRESET_BOTTOM_LEFT, 28)
-	_button(controls, "›", Vector2(108, -102), Vector2(74, 72), func(): player.move_lane(1), Control.PRESET_BOTTOM_LEFT, 28)
-	_button(controls, "SLIDE", Vector2(-285, -101), Vector2(86, 72), func(): player.slide(), Control.PRESET_BOTTOM_RIGHT, 14)
-	_button(controls, "JUMP", Vector2(-190, -101), Vector2(86, 72), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT, 16)
-	_button(controls, "STRIKE", Vector2(-95, -101), Vector2(86, 72), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT, 14)
-	pause_button = _button(controls, "Ⅱ", Vector2(-88, 61), Vector2(64, 54), _toggle_pause, Control.PRESET_TOP_RIGHT, 20)
-	flask_label = _label("FLASKS  0", 13, Color(0.95, 0.78, 0.48))
-	flask_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	flask_label.position = Vector2(-210, 72)
-	flask_label.size = Vector2(112, 30)
-	flask_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	controls.add_child(flask_label)
-	var use_flask_button := _button(controls, "DRINK", Vector2(-210, 108), Vector2(88, 48), _use_healing_flask, Control.PRESET_TOP_RIGHT, 13)
+	var action_row := HBoxContainer.new()
+	action_row.name = "CombatAndMovementRunes"
+	action_row.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	action_row.position = Vector2(-300, -116)
+	action_row.size = Vector2(276, 88)
+	action_row.alignment = BoxContainer.ALIGNMENT_END
+	action_row.add_theme_constant_override("separation", 14)
+	controls.add_child(action_row)
+	_rune_button(action_row, "res://assets/ui/icons/slide.svg", "Slide", func(): player.slide(), 76)
+	_rune_button(action_row, "res://assets/ui/icons/jump.svg", "Jump", func(): player.jump(), 76)
+	_rune_button(action_row, "res://assets/ui/icons/sword.svg", "Strike", func(): player.attack(), 84)
 
-	tutorial_label = _label("SWIPE TO MOVE     ↑ JUMP     ↓ SLIDE     TAP STRIKE", 15, Color(0.95, 0.84, 0.69))
+	pause_button = _rune_button(controls, "res://assets/ui/icons/pause.svg", "Pause", _toggle_pause, 58, Control.PRESET_TOP_RIGHT, Vector2(-34, 34))
+	flask_label = _label("0", 13, Color(0.93, 0.80, 0.61))
+	flask_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	flask_label.position = Vector2(-125, 83)
+	flask_label.size = Vector2(22, 20)
+	flask_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	controls.add_child(flask_label)
+	_rune_button(controls, "res://assets/ui/icons/flask.svg", "Use healing flask", _use_healing_flask, 58, Control.PRESET_TOP_RIGHT, Vector2(-110, 34))
+
+	tutorial_label = _label("SWIPE TO CHANGE LANES     ·     UP TO JUMP     ·     DOWN TO SLIDE", 13, Color(0.89, 0.81, 0.70))
 	tutorial_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	tutorial_label.position = Vector2(-420, 62)
-	tutorial_label.size = Vector2(840, 34)
+	tutorial_label.position = Vector2(-420, 52)
+	tutorial_label.size = Vector2(840, 28)
 	tutorial_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_label.hide()
 	controls.add_child(tutorial_label)
 
-	# CenterContainer provides consistent placement across phone aspect ratios.
-	var menu_row := HBoxContainer.new()
-	menu_row.name = "TitleMenuLayout"
-	menu_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	menu_row.offset_left = 28
-	menu_row.offset_right = -28
-	menu_row.offset_top = 42
-	menu_row.offset_bottom = -42
-	root_ui.add_child(menu_row)
-
-	var menu_slot := CenterContainer.new()
-	menu_slot.name = "TitleMenuSlot"
-	menu_slot.custom_minimum_size = Vector2(425, 0)
-	menu_slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	menu_row.add_child(menu_slot)
-
+	# The hero remains visible beside a narrow, restrained title plate.
 	menu_panel = PanelContainer.new()
 	menu_panel.name = "TitleMenuPanel"
 	menu_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_panel.custom_minimum_size = Vector2(410, 398)
-	menu_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	menu_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	menu_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.014, 0.012, 0.02, 0.95), Color(0.47, 0.23, 0.18), 14))
-	menu_slot.add_child(menu_panel)
-
-	var menu_spacer := Control.new()
-	menu_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	menu_row.add_child(menu_spacer)
-
+	menu_panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
+	menu_panel.position = Vector2(48, -246)
+	menu_panel.size = Vector2(410, 492)
+	menu_panel.custom_minimum_size = Vector2(410, 492)
+	menu_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.012, 0.016, 0.024, 0.88), Color(0.47, 0.32, 0.24), 8))
+	root_ui.add_child(menu_panel)
 	var menu_box := VBoxContainer.new()
 	menu_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	menu_box.add_theme_constant_override("separation", 13)
+	menu_box.add_theme_constant_override("separation", 8)
 	menu_panel.add_child(menu_box)
 
-	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 12, Color(0.8, 0.42, 0.31))
+	var brand_mark := TextureRect.new()
+	brand_mark.texture = load("res://assets/ui/blackthorn_brand_mark.svg") as Texture2D
+	brand_mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	brand_mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	brand_mark.custom_minimum_size = Vector2(72, 72)
+	brand_mark.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	menu_box.add_child(brand_mark)
+
+	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 10, Color(0.72, 0.51, 0.40))
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(eyebrow)
-
-	var title := _label("BLACKTHORN\nOATH", 43, Color(0.96, 0.90, 0.81))
+	var title := _heading("BLACKTHORN\nOATH", 40, Color(0.95, 0.89, 0.79))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_constant_override("line_spacing", -8)
+	title.add_theme_constant_override("line_spacing", -7)
 	menu_box.add_child(title)
-
-	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral has begun to wake.", 14, Color(0.82, 0.76, 0.72))
+	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral is awake.", 13, Color(0.73, 0.75, 0.78))
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(description)
 
-	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 56), _start_run, Control.PRESET_TOP_LEFT, 18)
-	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var shop_entry := _button(menu_box, "THE ARMOURY  /  SHOP", Vector2.ZERO, Vector2(0, 44), _open_shop, Control.PRESET_TOP_LEFT, 15)
-	shop_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var contracts_entry := _button(menu_box, "DAILY CONTRACTS", Vector2.ZERO, Vector2(0, 42), _open_contracts, Control.PRESET_TOP_LEFT, 14)
-	contracts_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var settings_entry := _button(menu_box, "SETTINGS", Vector2.ZERO, Vector2(0, 38), _open_settings, Control.PRESET_TOP_LEFT, 13)
-	settings_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var start_button := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 58), _start_run, Control.PRESET_TOP_LEFT, 17)
+	start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 12, Color(0.73, 0.68, 0.68))
-	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_box.add_child(controls_hint)
+	var menu_actions := HBoxContainer.new()
+	menu_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	menu_actions.add_theme_constant_override("separation", 18)
+	menu_box.add_child(menu_actions)
+	_add_menu_rune(menu_actions, "res://assets/ui/icons/armoury.svg", "ARMOURY", _open_shop)
+	_add_menu_rune(menu_actions, "res://assets/ui/icons/contracts.svg", "CONTRACTS", _open_contracts)
+	_add_menu_rune(menu_actions, "res://assets/ui/icons/settings.svg", "SETTINGS", _open_settings)
 
-	var footer := _label("BEST  %05d m    RELICS  %03d    COINS  %05d" % [best_distance, relic_bank, coin_wallet], 11, Color(0.67, 0.61, 0.61))
+	var menu_hint := _label("SWIPE TO MOVE  ·  RUNE CONTROLS TO ACT", 10, Color(0.60, 0.64, 0.69))
+	menu_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu_box.add_child(menu_hint)
+	var footer := _label("BEST  %05d m       ◈  %05d" % [best_distance, coin_wallet], 11, Color(0.75, 0.64, 0.50))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(footer)
 	menu_panel.hide()
 
-
-	modal_panel = _make_overlay_panel(root_ui, Vector2(460, 276))
-	modal_panel.set_anchors_preset(Control.PRESET_CENTER)
-	modal_panel.position = Vector2(-230, -138)
+	modal_panel = _make_overlay_panel(root_ui, Vector2(440, 282))
 	modal_panel.hide()
 	var modal_box := VBoxContainer.new()
 	modal_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	modal_box.add_theme_constant_override("separation", 18)
+	modal_box.add_theme_constant_override("separation", 15)
 	modal_panel.add_child(modal_box)
-	modal_title = _label("PAUSED", 34, Color(0.95, 0.87, 0.77))
+	modal_title = _heading("PAUSED", 32, Color(0.94, 0.86, 0.75))
 	modal_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	modal_box.add_child(modal_title)
-	modal_body = _label("The wind carries the bells through the ruins.", 15, Color(0.73, 0.68, 0.68))
+	modal_body = _label("The dead do not tire. Take a breath.", 14, Color(0.72, 0.75, 0.79))
 	modal_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	modal_box.add_child(modal_body)
-	modal_action = _button(modal_box, "RESUME", Vector2.ZERO, Vector2(0, 58), _on_modal_action_pressed, Control.PRESET_TOP_LEFT, 18)
+	modal_action = _button(modal_box, "RESUME", Vector2.ZERO, Vector2(0, 56), _on_modal_action_pressed, Control.PRESET_TOP_LEFT, 17)
 	modal_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var pause_shop := _button(modal_box, "OPEN ARMOURY", Vector2.ZERO, Vector2(0, 46), _open_shop, Control.PRESET_TOP_LEFT, 15)
+	var pause_shop := _button(modal_box, "OPEN ARMOURY", Vector2.ZERO, Vector2(0, 46), _open_shop, Control.PRESET_TOP_LEFT, 14)
 	pause_shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	shop_panel = _make_overlay_panel(root_ui, Vector2(500, 430))
+	shop_panel = _make_overlay_panel(root_ui, Vector2(484, 422))
 	shop_panel.name = "ArmouryShop"
-	shop_panel.set_anchors_preset(Control.PRESET_CENTER)
-	shop_panel.position = Vector2(-250, -215)
 	shop_panel.hide()
 	var shop_box := VBoxContainer.new()
 	shop_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	shop_box.add_theme_constant_override("separation", 12)
+	shop_box.add_theme_constant_override("separation", 10)
 	shop_panel.add_child(shop_box)
-	var shop_title := _label("THE ASHEN ARMOURY", 30, Color(0.96, 0.88, 0.76))
+	var shop_title := _heading("THE ASHEN ARMOURY", 27, Color(0.94, 0.86, 0.74))
 	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shop_box.add_child(shop_title)
-	shop_status_label = _label("", 15, Color(0.94, 0.73, 0.35))
+	shop_status_label = _label("", 13, Color(0.89, 0.70, 0.47))
 	shop_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	shop_box.add_child(shop_status_label)
-	var blade_buy := _button(shop_box, "TEMPERED EDGE  ·  80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("blade"), Control.PRESET_TOP_LEFT, 15)
-	blade_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var vitality_buy := _button(shop_box, "VITALITY RUNE  ·  100 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("vitality"), Control.PRESET_TOP_LEFT, 15)
-	vitality_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var fortune_buy := _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 15)
-	fortune_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var flask_buy := _button(shop_box, "HEALING FLASK  ·  45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("flask"), Control.PRESET_TOP_LEFT, 15)
-	flask_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var shop_close := _button(shop_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_shop, Control.PRESET_TOP_LEFT, 14)
-	shop_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var blade_buy := _button(shop_box, "TEMPERED EDGE  ·  80 COINS", Vector2.ZERO, Vector2(0, 48), func(): _buy_upgrade("blade"), Control.PRESET_TOP_LEFT, 14)
+	var vitality_buy := _button(shop_box, "VITALITY RUNE  ·  100 COINS", Vector2.ZERO, Vector2(0, 48), func(): _buy_upgrade("vitality"), Control.PRESET_TOP_LEFT, 14)
+	var fortune_buy := _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 48), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 14)
+	var flask_buy := _button(shop_box, "HEALING FLASK  ·  45 COINS", Vector2.ZERO, Vector2(0, 48), func(): _buy_upgrade("flask"), Control.PRESET_TOP_LEFT, 14)
+	var shop_close := _button(shop_box, "RETURN", Vector2.ZERO, Vector2(0, 42), _close_shop, Control.PRESET_TOP_LEFT, 13)
 
-	contracts_panel = _make_overlay_panel(root_ui, Vector2(520, 390))
+	contracts_panel = _make_overlay_panel(root_ui, Vector2(500, 370))
 	contracts_panel.name = "DailyContracts"
-	contracts_panel.set_anchors_preset(Control.PRESET_CENTER)
-	contracts_panel.position = Vector2(-260, -195)
 	contracts_panel.hide()
 	var contracts_box := VBoxContainer.new()
 	contracts_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	contracts_box.add_theme_constant_override("separation", 12)
+	contracts_box.add_theme_constant_override("separation", 10)
 	contracts_panel.add_child(contracts_box)
-	var contracts_title := _label("THE GUILD'S DAILY CONTRACTS", 27, Color(0.96, 0.88, 0.76))
+	var contracts_title := _heading("THE GUILD'S DAILY CONTRACTS", 25, Color(0.94, 0.86, 0.74))
 	contracts_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	contracts_box.add_child(contracts_title)
-	contracts_status_label = _label("", 14, Color(0.94, 0.73, 0.35))
+	contracts_status_label = _label("", 13, Color(0.89, 0.70, 0.47))
 	contracts_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	contracts_box.add_child(contracts_status_label)
-	var contract_kills := _button(contracts_box, "HUNT 10 FOES  ·  REWARD 60 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(0), Control.PRESET_TOP_LEFT, 14)
-	contract_kills.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var contract_relics := _button(contracts_box, "RECOVER 6 RELICS  ·  REWARD 45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(1), Control.PRESET_TOP_LEFT, 14)
-	contract_relics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var contract_distance := _button(contracts_box, "TRAVEL 350 M  ·  REWARD 80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(2), Control.PRESET_TOP_LEFT, 14)
-	contract_distance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var contracts_close := _button(contracts_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_contracts, Control.PRESET_TOP_LEFT, 14)
-	contracts_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contract_kills := _button(contracts_box, "HUNT 10 FOES  ·  REWARD 60 COINS", Vector2.ZERO, Vector2(0, 48), func(): _claim_contract(0), Control.PRESET_TOP_LEFT, 13)
+	var contract_relics := _button(contracts_box, "RECOVER 6 RELICS  ·  REWARD 45 COINS", Vector2.ZERO, Vector2(0, 48), func(): _claim_contract(1), Control.PRESET_TOP_LEFT, 13)
+	var contract_distance := _button(contracts_box, "TRAVEL 350 M  ·  REWARD 80 COINS", Vector2.ZERO, Vector2(0, 48), func(): _claim_contract(2), Control.PRESET_TOP_LEFT, 13)
+	var contracts_close := _button(contracts_box, "RETURN", Vector2.ZERO, Vector2(0, 42), _close_contracts, Control.PRESET_TOP_LEFT, 13)
 
-	settings_panel = _make_overlay_panel(root_ui, Vector2(460, 300))
+	settings_panel = _make_overlay_panel(root_ui, Vector2(440, 310))
 	settings_panel.name = "Settings"
 	settings_panel.hide()
 	var settings_box := VBoxContainer.new()
 	settings_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	settings_box.add_theme_constant_override("separation", 14)
+	settings_box.add_theme_constant_override("separation", 12)
 	settings_panel.add_child(settings_box)
-	var settings_title := _label("GAME SETTINGS", 28, Color(0.96, 0.88, 0.76))
+	var settings_title := _heading("SETTINGS", 27, Color(0.94, 0.86, 0.74))
 	settings_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	settings_box.add_child(settings_title)
-	var music_caption := _label("MUSIC VOLUME", 13, Color(0.84, 0.76, 0.68))
-	settings_box.add_child(music_caption)
+	settings_box.add_child(_label("MUSIC", 12, Color(0.74, 0.74, 0.75)))
 	var music_slider := HSlider.new()
 	music_slider.min_value = 0.0
 	music_slider.max_value = 1.0
@@ -1053,8 +1043,7 @@ func _build_interface() -> void:
 	music_slider.custom_minimum_size = Vector2(0, 28)
 	music_slider.value_changed.connect(_set_music_volume)
 	settings_box.add_child(music_slider)
-	var effects_caption := _label("SOUND EFFECTS", 13, Color(0.84, 0.76, 0.68))
-	settings_box.add_child(effects_caption)
+	settings_box.add_child(_label("EFFECTS", 12, Color(0.74, 0.74, 0.75)))
 	var effects_slider := HSlider.new()
 	effects_slider.min_value = 0.0
 	effects_slider.max_value = 1.0
@@ -1063,14 +1052,25 @@ func _build_interface() -> void:
 	effects_slider.custom_minimum_size = Vector2(0, 28)
 	effects_slider.value_changed.connect(_set_effects_volume)
 	settings_box.add_child(effects_slider)
-	var settings_close := _button(settings_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_settings, Control.PRESET_TOP_LEFT, 14)
-	settings_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var settings_close := _button(settings_box, "RETURN", Vector2.ZERO, Vector2(0, 42), _close_settings, Control.PRESET_TOP_LEFT, 13)
 
 	fade_overlay = ColorRect.new()
-	fade_overlay.color = Color(0.008, 0.006, 0.012, 1.0)
+	fade_overlay.color = Color(0.004, 0.006, 0.012, 1.0)
 	fade_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	fade_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root_ui.add_child(fade_overlay)
+
+func _add_menu_rune(parent: Control, icon_path: String, caption: String, action: Callable) -> void:
+	var slot := VBoxContainer.new()
+	slot.alignment = BoxContainer.ALIGNMENT_CENTER
+	slot.add_theme_constant_override("separation", 5)
+	parent.add_child(slot)
+	_rune_button(slot, icon_path, caption, action, 62)
+	var caption_label := _label(caption, 9, Color(0.72, 0.66, 0.58))
+	caption_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	slot.add_child(caption_label)
+
+
 
 func _update_cinematic(delta: float) -> void:
 	intro_elapsed += delta
@@ -1169,7 +1169,7 @@ func _start_run() -> void:
 	menu_panel.hide()
 	hud.show()
 	controls.show()
-	pause_button.text = "Ⅱ"
+	pause_button.text = ""
 	player.forward_speed = 12.0
 	daily_distance_last_sample = int(distance)
 	run_started_at = Time.get_ticks_msec() / 1000.0
@@ -1190,7 +1190,7 @@ func _toggle_pause() -> void:
 	modal_body.text = "The dead do not tire. Take a breath."
 	modal_action.text = "RESUME"
 	modal_panel.show()
-	pause_button.text = "▶"
+	pause_button.text = ""
 
 func _resume_run() -> void:
 	paused = false
@@ -1210,21 +1210,30 @@ func _make_overlay_panel(parent: Control, dimensions: Vector2) -> PanelContainer
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.position = Vector2(-dimensions.x * 0.5, -dimensions.y * 0.5)
 	panel.size = dimensions
-	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.014, 0.012, 0.02, 0.88), Color(0.39, 0.19, 0.15), 14))
+	panel.add_theme_stylebox_override("panel", _panel_style(Color(0.012, 0.016, 0.024, 0.94), Color(0.46, 0.33, 0.25), 8))
 	parent.add_child(panel)
 	return panel
 
-func _panel_style(fill: Color, border: Color, radius: int = 10) -> StyleBoxFlat:
+func _panel_style(fill: Color, border: Color, radius: int = 8) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
 	style.border_color = border
 	style.set_border_width_all(1)
+	style.set_border_width(SIDE_TOP, 2)
+	style.set_border_width(SIDE_BOTTOM, 3)
 	style.set_corner_radius_all(radius)
-	style.content_margin_left = 27
-	style.content_margin_right = 27
-	style.content_margin_top = 24
-	style.content_margin_bottom = 24
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.72)
+	style.shadow_size = 18
+	style.shadow_offset = Vector2(0, 8)
+	style.anti_aliasing = true
+	style.anti_aliasing_size = 1.2
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 22
+	style.content_margin_bottom = 22
 	return style
+
+
 
 func _label(text_value: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()
@@ -1236,35 +1245,97 @@ func _label(text_value: String, font_size: int, color: Color) -> Label:
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	return label
 
+func _heading(text_value: String, font_size: int, color: Color) -> Label:
+	var label := _label(text_value, font_size, color)
+	if ResourceLoader.exists("res://assets/fonts/Cinzel.ttf"):
+		var font := load("res://assets/fonts/Cinzel.ttf") as Font
+		if font != null:
+			label.add_theme_font_override("font", font)
+	return label
+
 func _button(parent: Control, caption: String, offset: Vector2, dimensions: Vector2, action: Callable, preset: int, font_size: int) -> Button:
 	var button := Button.new()
 	button.text = caption
-	button.set_anchors_preset(preset)
-	button.position = offset
-	button.size = dimensions
-	button.custom_minimum_size = dimensions
 	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = dimensions
+	if parent is Container:
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	else:
+		button.set_anchors_preset(preset)
+		button.position = offset
+		button.size = dimensions
 	button.add_theme_font_size_override("font_size", font_size)
-	button.add_theme_color_override("font_color", Color(0.94, 0.86, 0.76))
-	button.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.85))
-	button.add_theme_color_override("font_pressed_color", Color(0.95, 0.5, 0.32))
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.045, 0.032, 0.04, 0.92)))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.055, 0.05, 0.98)))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.29, 0.07, 0.055, 0.98)))
+	button.add_theme_color_override("font_color", Color(0.92, 0.86, 0.77))
+	button.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.86))
+	button.add_theme_color_override("font_pressed_color", Color(0.98, 0.71, 0.49))
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.075, 0.063, 0.067, 0.96)))
+	button.add_theme_stylebox_override("hover", _button_style(Color(0.14, 0.085, 0.075, 0.98)))
+	button.add_theme_stylebox_override("pressed", _button_style(Color(0.22, 0.105, 0.082, 1.0), true))
 	button.pressed.connect(action)
 	parent.add_child(button)
 	return button
 
-func _button_style(fill: Color) -> StyleBoxFlat:
+func _button_style(fill: Color, pressed: bool = false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
-	style.border_color = Color(0.47, 0.24, 0.18)
+	style.border_color = Color(0.48, 0.34, 0.25)
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(8)
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 7
-	style.content_margin_bottom = 7
+	style.set_border_width(SIDE_TOP, 2)
+	style.set_border_width(SIDE_BOTTOM, 5 if not pressed else 2)
+	style.set_corner_radius_all(6)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.78)
+	style.shadow_size = 7 if not pressed else 2
+	style.shadow_offset = Vector2(0, 5 if not pressed else 1)
+	style.anti_aliasing = true
+	style.content_margin_left = 18
+	style.content_margin_right = 18
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	return style
+
+func _rune_button(parent: Control, icon_path: String, hint: String, action: Callable, diameter: int = 76, preset: int = Control.PRESET_TOP_LEFT, offset: Vector2 = Vector2.ZERO) -> Button:
+	var button := Button.new()
+	button.text = ""
+	button.tooltip_text = hint
+	button.process_mode = Node.PROCESS_MODE_ALWAYS
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(diameter, diameter)
+	if parent is Container:
+		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	else:
+		button.set_anchors_preset(preset)
+		button.position = offset
+		button.size = Vector2(diameter, diameter)
+	var icon_texture := load(icon_path) as Texture2D
+	if icon_texture != null:
+		button.icon = icon_texture
+		button.expand_icon = true
+		button.icon_max_width = int(float(diameter) * 0.43)
+	button.add_theme_stylebox_override("normal", _rune_style(Color(0.035, 0.041, 0.055, 0.96), diameter, false))
+	button.add_theme_stylebox_override("hover", _rune_style(Color(0.10, 0.061, 0.060, 0.99), diameter, false))
+	button.add_theme_stylebox_override("pressed", _rune_style(Color(0.16, 0.075, 0.066, 1.0), diameter, true))
+	button.pressed.connect(action)
+	parent.add_child(button)
+	return button
+
+func _rune_style(fill: Color, diameter: int, pressed: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = Color(0.48, 0.36, 0.27)
+	style.set_border_width_all(1)
+	style.set_border_width(SIDE_TOP, 2)
+	style.set_border_width(SIDE_BOTTOM, 5 if not pressed else 2)
+	style.set_corner_radius_all(diameter / 2)
+	style.shadow_color = Color(0.0, 0.0, 0.0, 0.78)
+	style.shadow_size = 8 if not pressed else 2
+	style.shadow_offset = Vector2(0, 5 if not pressed else 1)
+	style.anti_aliasing = true
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
 	return style
 
 func _spawn_segment(segment_z: float) -> void:
@@ -1530,11 +1601,11 @@ func _idle_camera(delta: float) -> void:
 func _update_hud() -> void:
 	if not is_instance_valid(score_label) or not is_instance_valid(player):
 		return
-	score_label.text = "DISTANCE   %05d m      KILLS  %02d" % [int(distance), kills]
-	health_label.text = "VITALITY   " + "♥  ".repeat(player.health) + "♡  ".repeat(maxi(0, player.max_health - player.health))
-	relic_label.text = "RELICS   %03d    /    RESERVE  %03d" % [relics, relic_bank]
-	coin_label.text = "COINS   %05d" % coin_wallet
-	best_label.text = "BEST RUN   %05d m" % best_distance
+	score_label.text = "%05d m   ·   %02d KILLS" % [int(distance), kills]
+	health_label.text = "♥  ".repeat(player.health) + "♡  ".repeat(maxi(0, player.max_health - player.health))
+	relic_label.text = "RELICS  %03d" % relics
+	coin_label.text = "◈  %05d" % coin_wallet
+	best_label.text = "BEST  %05d m" % best_distance
 	if is_instance_valid(flask_label):
 		flask_label.text = "FLASKS  %d" % healing_flasks
 
