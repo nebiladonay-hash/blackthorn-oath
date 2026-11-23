@@ -135,6 +135,7 @@ func _build_character() -> void:
 				visual_root.add_child(imported_model)
 				_fit_imported_model(imported_model, 1.9)
 				using_imported_model = true
+				face_for_cinematic()
 				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					imported_animation = animation_nodes[0] as AnimationPlayer
@@ -145,6 +146,18 @@ func _build_character() -> void:
 				return
 
 	_build_procedural_character()
+
+func face_for_cinematic() -> void:
+	if using_imported_model and imported_model != null:
+		imported_model.rotation.y = PI
+
+func face_for_menu() -> void:
+	if using_imported_model and imported_model != null:
+		imported_model.rotation.y = 0.0
+
+func face_for_run() -> void:
+	if using_imported_model and imported_model != null:
+		imported_model.rotation.y = PI
 
 func _fit_imported_model(model: Node3D, target_height: float) -> void:
 	var combined := AABB()
