@@ -93,5 +93,5 @@ Prototype 0.5.0 is an environment and cinematic vertical-slice upgrade, not a fi
 - Replaced the default boot presentation with a custom cinematic cathedral splash, compiled to PNG during the CI asset setup because Godot's boot splash setting expects a raster image.
 - Rebuilt the in-game interface as a restrained raised-rune control system: icon-only touch medallions for jump, slide, strike, pause and flask; swipe gestures remain the lane controls. The HUD is now a compact top status rail rather than a large block of text.
 - Added Cinzel display typography under the SIL Open Font License 1.1; license file is bundled.
-- Removed loose filename-based random SFX classification and random pickup chimes. Audio now uses a small named, curated library: concrete footsteps, heavy steel impacts and CC0 blade swishes. Relic collection is intentionally silent until a suitable low-frequency relic cue is selected.
-- SFX source licenses: Kenney Impact Sounds via 3DValley (CC0) and artisticdude's Swishes Sound Pack on OpenGameArt (CC0).
+- Removed loose filename-based random SFX classification and random pickup chimes. Audio now uses individually downloaded and header-validated CC0 sounds: concrete footsteps, heavy steel impacts, named blade OGGs and creature roars/grunts. Relic collection is intentionally silent; there is no arcade coin ding.
+- SFX source licenses: 3DValley's CC0 library, including Kenney Impact Sounds and OpenGameArt rubberduck blade/creature sounds.
