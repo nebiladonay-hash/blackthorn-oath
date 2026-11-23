@@ -58,6 +58,17 @@ var pause_button: Button
 var coin_label: Label
 var shop_panel: PanelContainer
 var shop_status_label: Label
+var contracts_panel: PanelContainer
+var contracts_status_label: Label
+var daily_key: String = ""
+var daily_kills: int = 0
+var daily_relics: int = 0
+var daily_distance: int = 0
+var daily_claimed: Array[bool] = [false, false, false]
+var lifetime_kills: int = 0
+var lifetime_relics: int = 0
+var lifetime_runs: int = 0
+var lifetime_distance: int = 0
 var subtitle_label: Label
 var intro_title_label: Label
 var intro_kicker_label: Label
@@ -106,6 +117,10 @@ func _process(delta: float) -> void:
 		return
 
 	distance = maxf(distance, -player.global_position.z - 3.0)
+	var measured_distance := int(distance)
+	if measured_distance > daily_distance:
+		daily_distance = measured_distance
+		_update_contracts_ui()
 	var elapsed: float = Time.get_ticks_msec() / 1000.0 - run_started_at
 	player.forward_speed = minf(12.0 + elapsed * 0.14, 18.5)
 	_update_hud()
@@ -919,6 +934,8 @@ func _build_interface() -> void:
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var shop_entry := _button(menu_box, "THE ARMOURY  /  SHOP", Vector2.ZERO, Vector2(0, 44), _open_shop, Control.PRESET_TOP_LEFT, 15)
 	shop_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contracts_entry := _button(menu_box, "DAILY CONTRACTS", Vector2.ZERO, Vector2(0, 42), _open_contracts, Control.PRESET_TOP_LEFT, 14)
+	contracts_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 12, Color(0.73, 0.68, 0.68))
 	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -972,6 +989,30 @@ func _build_interface() -> void:
 	fortune_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var shop_close := _button(shop_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_shop, Control.PRESET_TOP_LEFT, 14)
 	shop_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	contracts_panel = _make_overlay_panel(root_ui, Vector2(520, 390))
+	contracts_panel.name = "DailyContracts"
+	contracts_panel.set_anchors_preset(Control.PRESET_CENTER)
+	contracts_panel.position = Vector2(-260, -195)
+	contracts_panel.hide()
+	var contracts_box := VBoxContainer.new()
+	contracts_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	contracts_box.add_theme_constant_override("separation", 12)
+	contracts_panel.add_child(contracts_box)
+	var contracts_title := _label("THE GUILD'S DAILY CONTRACTS", 27, Color(0.96, 0.88, 0.76))
+	contracts_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contracts_box.add_child(contracts_title)
+	contracts_status_label = _label("", 14, Color(0.94, 0.73, 0.35))
+	contracts_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	contracts_box.add_child(contracts_status_label)
+	var contract_kills := _button(contracts_box, "HUNT 10 FOES  ·  REWARD 60 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(0), Control.PRESET_TOP_LEFT, 14)
+	contract_kills.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contract_relics := _button(contracts_box, "RECOVER 6 RELICS  ·  REWARD 45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(1), Control.PRESET_TOP_LEFT, 14)
+	contract_relics.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contract_distance := _button(contracts_box, "TRAVEL 350 M  ·  REWARD 80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _claim_contract(2), Control.PRESET_TOP_LEFT, 14)
+	contract_distance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var contracts_close := _button(contracts_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_contracts, Control.PRESET_TOP_LEFT, 14)
+	contracts_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.008, 0.006, 0.012, 1.0)
@@ -1454,6 +1495,8 @@ func _show_game_over() -> void:
 	paused = false
 	get_tree().paused = false
 	best_distance = maxi(best_distance, int(distance))
+	lifetime_runs += 1
+	lifetime_distance += int(distance)
 	_save_progress()
 	modal_title.text = "OATH BROKEN"
 	modal_body.text = "DISTANCE  %d m     KILLS  %d\nRELICS FOUND  %d\nBEST RUN  %d m" % [int(distance), kills, relics, best_distance]
@@ -1463,16 +1506,22 @@ func _show_game_over() -> void:
 
 func add_kill() -> void:
 	kills += 1
+	lifetime_kills += 1
+	daily_kills += 1
 	coin_wallet += 5 + fortune_level
 	_save_progress()
 	_update_hud()
+	_update_contracts_ui()
 
 func add_relic() -> void:
 	relics += 1
 	relic_bank += 1
+	lifetime_relics += 1
+	daily_relics += 1
 	coin_wallet += 10
 	_save_progress()
 	_update_hud()
+	_update_contracts_ui()
 
 func _load_progress() -> void:
 	if save_data.load("user://blackthorn_oath.cfg") == OK:
@@ -1482,6 +1531,11 @@ func _load_progress() -> void:
 		blade_level = int(save_data.get_value("upgrades", "blade", 0))
 		vitality_level = int(save_data.get_value("upgrades", "vitality", 0))
 		fortune_level = int(save_data.get_value("upgrades", "fortune", 0))
+		lifetime_kills = int(save_data.get_value("lifetime", "kills", 0))
+		lifetime_relics = int(save_data.get_value("lifetime", "relics", 0))
+		lifetime_runs = int(save_data.get_value("lifetime", "runs", 0))
+		lifetime_distance = int(save_data.get_value("lifetime", "distance", 0))
+	_ensure_daily_contracts()
 
 func _save_progress() -> void:
 	save_data.set_value("progress", "best_distance", best_distance)
@@ -1490,7 +1544,63 @@ func _save_progress() -> void:
 	save_data.set_value("upgrades", "blade", blade_level)
 	save_data.set_value("upgrades", "vitality", vitality_level)
 	save_data.set_value("upgrades", "fortune", fortune_level)
+	save_data.set_value("lifetime", "kills", lifetime_kills)
+	save_data.set_value("lifetime", "relics", lifetime_relics)
+	save_data.set_value("lifetime", "runs", lifetime_runs)
+	save_data.set_value("lifetime", "distance", lifetime_distance)
+	save_data.set_value("daily", "date", daily_key)
+	save_data.set_value("daily", "kills", daily_kills)
+	save_data.set_value("daily", "relics", daily_relics)
+	save_data.set_value("daily", "distance", daily_distance)
+	save_data.set_value("daily", "claimed", daily_claimed)
 	save_data.save("user://blackthorn_oath.cfg")
+
+func _ensure_daily_contracts() -> void:
+	var today := Time.get_date_string_from_system()
+	if daily_key != today:
+		daily_key = today
+		daily_kills = 0
+		daily_relics = 0
+		daily_distance = 0
+		daily_claimed = [false, false, false]
+		_save_progress()
+
+func _open_contracts() -> void:
+	_ensure_daily_contracts()
+	_update_contracts_ui()
+	contracts_panel.show()
+	menu_panel.hide()
+
+func _close_contracts() -> void:
+	contracts_panel.hide()
+	if not game_started:
+		menu_panel.show()
+
+func _update_contracts_ui() -> void:
+	if not is_instance_valid(contracts_status_label):
+		return
+	var kill_state := "CLAIMED" if daily_claimed[0] else ("READY TO CLAIM" if daily_kills >= 10 else "%d / 10" % mini(daily_kills, 10))
+	var relic_state := "CLAIMED" if daily_claimed[1] else ("READY TO CLAIM" if daily_relics >= 6 else "%d / 6" % mini(daily_relics, 6))
+	var distance_state := "CLAIMED" if daily_claimed[2] else ("READY TO CLAIM" if daily_distance >= 350 else "%d / 350 M" % mini(daily_distance, 350))
+	contracts_status_label.text = "KILLS  %s     RELICS  %s\nDISTANCE  %s     ·     RESETS DAILY" % [kill_state, relic_state, distance_state]
+	if is_instance_valid(coin_label):
+		coin_label.text = "COINS   %05d" % coin_wallet
+
+func _claim_contract(index: int) -> void:
+	_ensure_daily_contracts()
+	var goals := [10, 6, 350]
+	var rewards := [60, 45, 80]
+	var progress := [daily_kills, daily_relics, daily_distance]
+	if index < 0 or index >= goals.size() or daily_claimed[index]:
+		return
+	if progress[index] < goals[index]:
+		contracts_status_label.text = "CONTRACT NOT COMPLETE YET."
+		return
+	daily_claimed[index] = true
+	coin_wallet += rewards[index]
+	_save_progress()
+	_update_contracts_ui()
+	contracts_status_label.text += "\nREWARD COLLECTED  ·  +%d COINS" % rewards[index]
 
 func _apply_asset_tint(root: Node3D, tint: Color) -> void:
 	for item in root.find_children("*", "MeshInstance3D", true, false):
