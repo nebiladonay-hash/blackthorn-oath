@@ -714,9 +714,9 @@ func _scan_sfx_directory(path: String) -> void:
 		var category := ""
 		if normalized.contains("sword") or normalized.contains("swoosh") or normalized.contains("swish") or normalized.contains("swing") or normalized.contains("slash") or normalized.contains("weapon"):
 			category = "sword"
-		elif normalized.contains("step") or normalized.contains("foot") or normalized.contains("walk") or normalized.contains("run"):
+		elif normalized.contains("step") or normalized.contains("foot") or normalized.contains("walk") or normalized.contains("run") or normalized.contains("chainmail") or normalized.contains("armor-light"):
 			category = "footstep"
-		elif normalized.contains("growl") or normalized.contains("roar") or normalized.contains("snarl") or normalized.contains("monster") or normalized.contains("ogre") or normalized.contains("grunt"):
+		elif normalized.contains("growl") or normalized.contains("roar") or normalized.contains("snarl") or normalized.contains("monster") or normalized.contains("ogre") or normalized.contains("giant") or normalized.contains("bite") or normalized.contains("grunt"):
 			category = "creature"
 		elif normalized.contains("coin") or normalized.contains("collect") or normalized.contains("pickup") or normalized.contains("item"):
 			category = "pickup"
