@@ -136,8 +136,8 @@ func _add_character_lighting() -> void:
 	front_fill.name = "KnightFrontFill"
 	front_fill.position = Vector3(0.0, 2.0, -2.4)
 	front_fill.light_color = Color(0.70, 0.79, 1.0)
-	front_fill.light_energy = 7.2
-	front_fill.omni_range = 12.0
+	front_fill.light_energy = 2.2
+	front_fill.omni_range = 9.0
 	front_fill.shadow_enabled = false
 	visual_root.add_child(front_fill)
 
@@ -145,8 +145,8 @@ func _add_character_lighting() -> void:
 	warm_rim.name = "KnightWarmRim"
 	warm_rim.position = Vector3(1.4, 1.6, 1.0)
 	warm_rim.light_color = Color(1.0, 0.26, 0.12)
-	warm_rim.light_energy = 2.0
-	warm_rim.omni_range = 7.0
+	warm_rim.light_energy = 1.15
+	warm_rim.omni_range = 6.0
 	warm_rim.shadow_enabled = false
 	visual_root.add_child(warm_rim)
 
