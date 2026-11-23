@@ -107,6 +107,9 @@ private:
     void EndSlide();
     void EndInvulnerability();
     void EndAttack();
+    void PerformAttackTrace();
+
+    FTimerHandle AttackHitTimer;
     void UpdateLanePosition();
 
     float StandingCapsuleHalfHeight = 92.5f;
