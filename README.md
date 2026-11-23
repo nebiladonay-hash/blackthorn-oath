@@ -2,13 +2,13 @@
 
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
-## Prototype 0.4.0 — The Last Cathedral
+## Prototype 0.4.1 — The Last Cathedral
 
 This milestone corrects the environmental and cinematic issues found in the previous visual-review screenshots.
 
 - Imports a full-scale 17 MB Gothic cathedral landmark (CC0) as the distant world anchor, downloaded reproducibly by `scripts/download_assets.sh`.
 - Rebuilt the foreground as a separate open gatehouse; the solid wall that previously blocked the doorway and hid the Warden has been removed.
-- The Bell Warden now stands in the clear portal opening as the gate leaves swing outward.
+- The Bell Warden now stands in the clear portal opening as the gate leaves swing outward, with a restored large silhouette and crown horns.
 - Replaced repeated cone silhouettes with a continuous generated mountain ridge mesh and surrounding ground plane.
 - Replaced solid tunnel walls with spaced ruined cloister arcades, transverse Gothic ribs and open side views.
 - Increased ambient moonlight and neutral stone brightness while reducing heavy fog; the scene should remain dark-fantasy but the architecture must be readable.
@@ -42,4 +42,4 @@ Open the repository in Godot 4.4.1 with matching export templates. GitHub Action
 
 ## Honest status
 
-Prototype 0.4.0 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
+Prototype 0.4.1 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
