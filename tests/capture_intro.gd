@@ -6,6 +6,39 @@ const OUTPUT_DIR := "res://build/visual_review"
 func _initialize() -> void:
 	call_deferred("_capture_intro")
 
+func _print_rig_report(scene: Node3D, node_name: String, label: String) -> void:
+	var owner := scene.find_child(node_name, true, false)
+	if owner == null:
+		print(label, "_RIG_MISSING")
+		return
+	var model := owner.get("imported_model") as Node3D
+	if model == null:
+		model = owner.find_child("RiggedBellWarden", true, false) as Node3D
+	if model == null:
+		print(label, "_MODEL_MISSING")
+		return
+	for skeleton_node in model.find_children("*", "Skeleton3D", true, false):
+		var skeleton := skeleton_node as Skeleton3D
+		var names := PackedStringArray()
+		for bone_index in range(skeleton.get_bone_count()):
+			names.append(skeleton.get_bone_name(bone_index))
+		print(label, "_RIG_BONES ", names)
+	var bounds := AABB()
+	var has_bounds := false
+	for mesh_node in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := mesh_node as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var transform: Transform3D = model.global_transform.affine_inverse() * mesh_instance.global_transform
+		var mesh_bounds: AABB = mesh_instance.get_aabb() * transform
+		if has_bounds:
+			bounds = bounds.merge(mesh_bounds)
+		else:
+			bounds = mesh_bounds
+			has_bounds = true
+	if has_bounds:
+		print(label, "_RIG_BOUNDS ", bounds.size)
+
 func _capture_intro() -> void:
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
@@ -15,6 +48,8 @@ func _capture_intro() -> void:
 	var scene: Node3D = packed_scene.instantiate()
 	get_root().add_child(scene)
 	current_scene = scene
+	_print_rig_report(scene, "OathboundKnight", "PLAYER")
+	_print_rig_report(scene, "TheBellWarden", "WARDEN")
 
 	var output_absolute := ProjectSettings.globalize_path(OUTPUT_DIR)
 	var dir_error := DirAccess.make_dir_recursive_absolute(output_absolute)

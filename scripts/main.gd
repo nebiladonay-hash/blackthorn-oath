@@ -945,8 +945,8 @@ func _skip_intro() -> void:
 	if not intro_active:
 		return
 	intro_elapsed = INTRO_LENGTH
-	cathedral_gate_left.rotation.y = -0.94
-	cathedral_gate_right.rotation.y = 0.94
+	cathedral_gate_left.rotation.y = -1.38
+	cathedral_gate_right.rotation.y = 1.38
 	gate_guardian.visible = true
 	portal_light.light_energy = 3.75
 	_finish_intro()

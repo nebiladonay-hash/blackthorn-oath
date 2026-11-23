@@ -2,7 +2,7 @@
 
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
-## Prototype 0.4.2 — Rigged Knight and Bell Warden
+## Prototype 0.4.3 — Cinematic Readability Pass
 
 This milestone corrects the environmental and cinematic issues found in the previous visual-review screenshots.
 
@@ -12,7 +12,12 @@ This milestone corrects the environmental and cinematic issues found in the prev
 - The player uses a rigged silver knight model with idle, walk and sprint animation clips, plus a separate sword strike overlay.
 - Replaced repeated cone silhouettes with a continuous generated mountain ridge mesh and surrounding ground plane.
 - Replaced solid tunnel walls with spaced ruined cloister pillars, rare broken lintels and open side views.
-- Centered the title menu with a responsive CenterContainer layout; removed fixed offsets that clipped the panel on phone aspect ratios.
+- Rebuilt the title screen as a two-column layout so the story card no longer hides the playable knight.
+- Added a cool front key light and warm rim light to show the silver plate and purple cape.
+- Fitted the Bell Warden to a known world height and brought the camera close enough to read its silhouette.
+- Moved portal lighting to the camera-facing side of the Warden.
+- Tinted the imported cathedral's PBR materials while preserving their texture maps, and increased its landmark scale.
+- Added a procedural ash-rock ground shader, dead-tree silhouettes and terrain boulders.
 - Increased ambient moonlight and neutral stone brightness while reducing heavy fog; the scene should remain dark-fantasy but the architecture must be readable.
 - Re-staged the cinematic camera: wide cathedral approach, clear gate/Warden reveal, front-facing hero portrait, then rear gameplay title shot.
 - Re-centered the main menu and aligned its title, story copy and controls.
@@ -44,4 +49,4 @@ Open the repository in Godot 4.4.1 with matching export templates. GitHub Action
 
 ## Honest status
 
-Prototype 0.4.2 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
+Prototype 0.4.3 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
