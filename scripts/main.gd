@@ -496,12 +496,34 @@ func _build_distant_silhouette() -> void:
 	earth_mesh.size = Vector2(230.0, 390.0)
 	earth.mesh = earth_mesh
 	earth.position = Vector3(0, -1.25, -150.0)
-	earth.material_override = _standard_material(Color(0.075, 0.065, 0.075), 0.05, 0.97)
+	earth.material_override = _make_ash_ground_material()
 	horizon.add_child(earth)
 
 	var ridge_material := _standard_material(Color(0.075, 0.068, 0.09), 0.03, 0.98)
 	_build_mountain_ridge(horizon, -1.0, ridge_material)
 	_build_mountain_ridge(horizon, 1.0, ridge_material)
+
+	# Wind-bent dead trees and weathered boulders break up the broad terrain plane.
+	var terrain_rng := RandomNumberGenerator.new()
+	terrain_rng.seed = 28471
+	for tree_index in range(9):
+		var side: float = -1.0 if tree_index % 2 == 0 else 1.0
+		var tree_x: float = side * terrain_rng.randf_range(17.0, 34.0)
+		var tree_z: float = terrain_rng.randf_range(-118.0, -24.0)
+		var tree_height: float = terrain_rng.randf_range(6.5, 11.5)
+		_add_dead_tree(horizon, Vector3(tree_x, -0.7, tree_z), tree_height)
+	for rock_index in range(18):
+		var side: float = -1.0 if rock_index % 2 == 0 else 1.0
+		var rock := MeshInstance3D.new()
+		var rock_mesh := SphereMesh.new()
+		rock_mesh.radius = 0.5
+		rock_mesh.height = 1.0
+		rock.mesh = rock_mesh
+		rock.scale = Vector3(terrain_rng.randf_range(1.0, 2.8), terrain_rng.randf_range(0.45, 1.1), terrain_rng.randf_range(0.8, 2.2))
+		rock.position = Vector3(side * terrain_rng.randf_range(11.0, 28.0), -0.35, terrain_rng.randf_range(-128.0, -18.0))
+		rock.rotation = Vector3(terrain_rng.randf_range(-0.4, 0.4), terrain_rng.randf_range(0.0, TAU), terrain_rng.randf_range(-0.4, 0.4))
+		rock.material_override = _standard_material(Color(0.16, 0.12, 0.12), 0.04, 0.96)
+		horizon.add_child(rock)
 
 	# Watchtowers puncture the ridgeline at different depths.
 	for side_index in range(2):
@@ -512,6 +534,84 @@ func _build_distant_silhouette() -> void:
 			_box(horizon, Vector3(tower_x, 7.0, tower_z), Vector3(3.2, 14.0, 3.2), dark_stone_material)
 			_box(horizon, Vector3(tower_x, 14.0, tower_z), Vector3(4.4, 0.7, 4.4), worn_stone_material)
 			_make_spire(horizon, Vector3(tower_x, 14.2, tower_z), 8.0, 1.5, metal_material)
+
+func _make_ash_ground_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+float hash21(vec2 p) {
+	p = fract(p * vec2(123.34, 456.21));
+	p += dot(p, p + 45.32);
+	return fract(p.x * p.y);
+}
+float noise21(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	float a = hash21(i);
+	float b = hash21(i + vec2(1.0, 0.0));
+	float c = hash21(i + vec2(0.0, 1.0));
+	float d = hash21(i + vec2(1.0, 1.0));
+	return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+float fbm(vec2 p) {
+	float total = 0.0;
+	float amplitude = 0.5;
+	for (int i = 0; i < 5; i++) {
+		total += noise21(p) * amplitude;
+		p *= 2.03;
+		amplitude *= 0.48;
+	}
+	return total;
+}
+void fragment() {
+	vec2 p = UV * vec2(92.0, 138.0);
+	float broad = fbm(p * 0.08);
+	float grain = fbm(p * 0.78);
+	float cracks = smoothstep(0.78, 0.93, noise21(p * 1.65));
+	vec3 dark_rock = vec3(0.045, 0.040, 0.052);
+	vec3 warm_ash = vec3(0.15, 0.105, 0.10);
+	vec3 stone = mix(dark_rock, warm_ash, broad * 0.78 + 0.08);
+	stone += (grain - 0.5) * 0.045;
+	stone *= 1.0 - cracks * 0.22;
+	ALBEDO = stone;
+	ROUGHNESS = 0.96;
+	METALLIC = 0.02;
+}
+"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
+
+func _add_dead_tree(parent: Node3D, origin: Vector3, height: float) -> void:
+	var bark := _standard_material(Color(0.075, 0.050, 0.045), 0.0, 0.98)
+	var trunk := MeshInstance3D.new()
+	var trunk_mesh := CylinderMesh.new()
+	trunk_mesh.top_radius = 0.07
+	trunk_mesh.bottom_radius = 0.42
+	trunk_mesh.height = height
+	trunk_mesh.radial_segments = 6
+	trunk.mesh = trunk_mesh
+	trunk.position = origin + Vector3(0, height * 0.5, 0)
+	trunk.rotation.z = 0.09 if origin.x > 0.0 else -0.09
+	trunk.material_override = bark
+	parent.add_child(trunk)
+	for branch_index in range(4):
+		var side: float = -1.0 if branch_index % 2 == 0 else 1.0
+		var branch_height: float = height * (0.44 + float(branch_index) * 0.105)
+		var branch_length: float = 1.7 + float(branch_index % 3) * 0.65
+		var branch := MeshInstance3D.new()
+		var branch_mesh := CylinderMesh.new()
+		branch_mesh.top_radius = 0.025
+		branch_mesh.bottom_radius = 0.12
+		branch_mesh.height = branch_length
+		branch_mesh.radial_segments = 5
+		branch.mesh = branch_mesh
+		branch.position = origin + Vector3(side * branch_length * 0.34, branch_height, 0)
+		branch.rotation.z = -side * 0.82
+		branch.material_override = bark
+		parent.add_child(branch)
 
 func _build_mountain_ridge(parent: Node3D, side: float, material: Material) -> void:
 	var surface := SurfaceTool.new()
