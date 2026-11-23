@@ -157,6 +157,44 @@ func _run_gameplay_checks() -> void:
 		return
 	print("GAMEPLAY_LANE_OK x=", player.global_position.x)
 
+	# Ashen Warden boss: higher health, readable world-space health display,
+	# ordinary kill payout plus one-time boss reward.
+	var boss := BlackthornOathBoss.new()
+	boss.position = player.global_position + Vector3(0.0, 0.0, -4.0)
+	scene.add_child(boss)
+	await process_frame
+	if boss.health != 12 or boss.boss_health_label == null:
+		push_error("GAMEPLAY_TEST: Ashen Warden did not initialize with its health display")
+		scene.queue_free()
+		quit(17)
+		return
+	var boss_wallet_before: int = scene.coin_wallet
+	var boss_relics_before: int = scene.relic_bank
+	boss.take_damage(11)
+	if boss.health != 1 or boss.is_dead:
+		push_error("GAMEPLAY_TEST: boss damage phase did not preserve remaining health")
+		scene.queue_free()
+		quit(18)
+		return
+	boss.take_damage(1)
+	if not boss.is_dead or not boss.reward_paid:
+		push_error("GAMEPLAY_TEST: boss death or one-time reward did not trigger")
+		scene.queue_free()
+		quit(19)
+		return
+	if scene.coin_wallet != boss_wallet_before + 55 or scene.relic_bank != boss_relics_before + 3:
+		push_error("GAMEPLAY_TEST: boss reward payout was incorrect")
+		scene.queue_free()
+		quit(20)
+		return
+	boss.take_damage(5)
+	if scene.coin_wallet != boss_wallet_before + 55:
+		push_error("GAMEPLAY_TEST: boss reward could be paid more than once")
+		scene.queue_free()
+		quit(21)
+		return
+	print("GAMEPLAY_BOSS_OK health=12 reward=50 coins+3 relics")
+
 	print("GAMEPLAY_VALIDATION_COMPLETE")
 	scene.queue_free()
 	await process_frame
