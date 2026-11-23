@@ -7,7 +7,7 @@ config/name="BLACKTHORN OATH"
 config/icon="res://assets/blackthorn_oath_icon.svg"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
-config/description="A cinematic dark-fantasy 3D action runner with a gothic cathedral prologue and original score."
+config/description="A cinematic dark-fantasy 3D action runner set in a ruined gothic cathedral approach."
 
 [display]
 window/size/viewport_width=1280
