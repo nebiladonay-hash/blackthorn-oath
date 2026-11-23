@@ -458,7 +458,7 @@ func attack() -> void:
 	attack_animation = 0.62 if using_imported_model else 0.32
 	# Separate the weapon wind-up from the damage frame. The hit lands after
 	# the blade has started moving, not on the input frame.
-	attack_hit_timer = 0.19 if using_imported_model else 0.11
+	attack_hit_timer = 0.08 if using_imported_model else 0.11
 	attack_hit_pending = true
 	_play_game_sfx("sword")
 
@@ -468,7 +468,7 @@ func _resolve_attack_hits() -> void:
 			continue
 		var d: Vector3 = enemy.global_position - global_position
 		# Three-lane combat: same lane only, and only in the forward sword arc.
-		if absf(d.x) < 1.5 and d.z > -3.2 and d.z < 0.8:
+		if absf(d.x) < 1.5 and d.z > -3.8 and d.z < 1.2:
 			enemy.take_damage(attack_power)
 
 func _play_game_sfx(kind: String) -> void:
