@@ -47,6 +47,7 @@ namespace BlackthornOath
             Instance = this;
             if (player == null)
                 player = FindFirstObjectByType<RunnerPlayerController>();
+            BindPlayerDeathEvent();
 
             BestDistance = PlayerPrefs.GetInt(BestDistanceKey, 0);
             RelicBank = PlayerPrefs.GetInt(RelicBankKey, 0);
@@ -67,6 +68,7 @@ namespace BlackthornOath
         {
             if (player == null)
                 player = FindFirstObjectByType<RunnerPlayerController>();
+            BindPlayerDeathEvent();
             if (player == null)
             {
                 Debug.LogError("Blackthorn Oath: no RunnerPlayerController is assigned.");
@@ -136,10 +138,20 @@ namespace BlackthornOath
             PlayerPrefs.Save();
         }
 
+        private void BindPlayerDeathEvent()
+        {
+            if (player == null)
+                return;
+            player.Died -= EndRun;
+            player.Died += EndRun;
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
             {
+                if (player != null)
+                    player.Died -= EndRun;
                 Time.timeScale = 1f;
                 Instance = null;
             }
