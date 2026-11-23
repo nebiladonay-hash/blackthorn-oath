@@ -57,6 +57,25 @@ func _run_gameplay_checks() -> void:
 		return
 	print("GAMEPLAY_DAILY_CONTRACT_OK reward=60")
 
+	# Consumable inventory must persist through the shop, heal exactly one point,
+	# and decrement only when a flask is actually used.
+	scene.coin_wallet = 100
+	scene._buy_upgrade("flask")
+	if scene.coin_wallet != 55 or scene.healing_flasks != 1:
+		push_error("GAMEPLAY_TEST: healing flask purchase failed")
+		scene.queue_free()
+		quit(15)
+		return
+	player.health = maxi(1, player.max_health - 1)
+	var health_before_flask: int = player.health
+	scene._use_healing_flask()
+	if player.health != health_before_flask + 1 or scene.healing_flasks != 0:
+		push_error("GAMEPLAY_TEST: healing flask did not heal and consume correctly")
+		scene.queue_free()
+		quit(16)
+		return
+	print("GAMEPLAY_INVENTORY_OK healing_flask=consumed")
+
 	var enemy := BlackthornOathEnemy.new()
 	enemy.configure(BlackthornOathEnemy.EnemyType.HOLLOW_GUARD)
 	enemy.position = player.position + Vector3(0.0, 0.0, -5.0)
