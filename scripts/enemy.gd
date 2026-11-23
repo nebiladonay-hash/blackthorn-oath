@@ -1,4 +1,4 @@
-extends Node3D
+extends StaticBody3D
 class_name BlackthornOathEnemy
 
 enum EnemyType { HOLLOW_GUARD, BLOODHOUND, EXECUTIONER }
@@ -32,6 +32,16 @@ func configure(kind: int) -> void:
 
 func _ready() -> void:
 	add_to_group("enemies")
+	collision_layer = 2
+	collision_mask = 0
+	var body_hitbox := CollisionShape3D.new()
+	body_hitbox.name = "EnemyBodyHitbox"
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.48
+	capsule.height = 2.25
+	body_hitbox.shape = capsule
+	body_hitbox.position.y = 1.125
+	add_child(body_hitbox)
 	_build_enemy()
 	player = get_tree().get_first_node_in_group("player") as BlackthornOathPlayer
 
