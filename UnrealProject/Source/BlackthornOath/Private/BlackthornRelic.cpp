@@ -1,6 +1,8 @@
 #include "BlackthornRelic.h"
 
 #include "BlackthornOathCharacter.h"
+#include "BlackthornGameMode.h"
+#include "Engine/World.h"
 #include "Components/SphereComponent.h"
 
 ABlackthornRelic::ABlackthornRelic()
@@ -50,5 +52,9 @@ void ABlackthornRelic::HandleOverlap(UPrimitiveComponent* OverlappedComponent,
 
     bCollected = true;
     SetActorEnableCollision(false);
+    if (ABlackthornGameMode* GameMode = GetWorld()->GetAuthGameMode<ABlackthornGameMode>())
+    {
+        GameMode->AddRelic();
+    }
     Destroy();
 }
