@@ -244,6 +244,7 @@ func _run_gameplay_checks() -> void:
 		scene.queue_free()
 		quit(19)
 		return
+	print("GAMEPLAY_BOSS_REWARD_DEBUG before=", boss_wallet_before, " after=", scene.coin_wallet, " expected=", boss_wallet_before + 55, " fortune=", scene.fortune_level, " relics_before=", boss_relics_before, " relics_after=", scene.relic_bank)
 	if scene.coin_wallet != boss_wallet_before + 55 or scene.relic_bank != boss_relics_before + 3:
 		push_error("GAMEPLAY_TEST: boss reward payout was incorrect")
 		scene.queue_free()
