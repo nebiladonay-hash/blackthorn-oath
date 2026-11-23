@@ -168,6 +168,38 @@ func _run_gameplay_checks() -> void:
 		scene.queue_free()
 		quit(17)
 		return
+	if boss.strike_telegraph == null:
+		push_error("GAMEPLAY_TEST: boss heavy-strike lane telegraph was not created")
+		scene.queue_free()
+		quit(23)
+		return
+	# The warning must mark the player's current lane; moving one lane away
+	# before impact must avoid the strike.
+	player.forward_speed = 0.0
+	boss.position = player.global_position + Vector3(0.0, 0.0, -10.0)
+	boss.slam_cooldown = 0.0
+	boss._process(0.016)
+	if boss.slam_warning <= 0.0 or not boss.strike_telegraph.visible:
+		push_error("GAMEPLAY_TEST: boss did not show a heavy-strike lane warning")
+		scene.queue_free()
+		quit(24)
+		return
+	var warned_lane := boss.warning_lane_x
+	if not is_equal_approx(warned_lane, player.global_position.x):
+		push_error("GAMEPLAY_TEST: boss telegraph did not target the player's lane")
+		scene.queue_free()
+		quit(25)
+		return
+	player.global_position.x += player.lane_width
+	player.global_position.z = boss.global_position.z + 2.0
+	var health_before_dodge: int = player.health
+	boss._process(1.0)
+	if player.health != health_before_dodge or boss.strike_telegraph.visible:
+		push_error("GAMEPLAY_TEST: moving out of the warned lane did not dodge the boss strike")
+		scene.queue_free()
+		quit(26)
+		return
+	print("GAMEPLAY_BOSS_TELEGRAPH_OK lane_dodge=success")
 	var boss_wallet_before: int = scene.coin_wallet
 	var boss_relics_before: int = scene.relic_bank
 	player.forward_speed = 0.0
