@@ -61,6 +61,9 @@ func _capture_intro() -> void:
 	var scene: Node3D = packed_scene.instantiate()
 	get_root().add_child(scene)
 	current_scene = scene
+	# Bypass the real-time intro fade so every QA still shows the actual scene.
+	scene.fade_overlay.modulate.a = 0.0
+	scene.fade_overlay.hide()
 	_print_rig_report(scene, "OathboundKnight", "PLAYER")
 	_print_rig_report(scene, "TheBellWarden", "WARDEN")
 
