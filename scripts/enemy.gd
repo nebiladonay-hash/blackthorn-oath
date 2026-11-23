@@ -78,6 +78,9 @@ func _process(delta: float) -> void:
 		if attack_windup <= 0.0:
 			attack_windup = 0.3
 			_play_enemy_animation("sword_attack")
+			var scene := get_tree().current_scene
+			if scene != null and scene.has_method("play_sfx"):
+				scene.call("play_sfx", "creature", global_position)
 		elif attack_windup < 0.12:
 			player.take_damage(damage)
 			attack_timer = attack_interval
@@ -99,6 +102,8 @@ func take_damage(amount: int = 1) -> void:
 		is_dead = true
 		_play_enemy_animation("death")
 		death_timer = 0.9
+		if scene != null and scene.has_method("play_sfx"):
+			scene.call("play_sfx", "creature", global_position)
 		var main := get_tree().current_scene
 		if main and main.has_method("add_kill"):
 			main.add_kill()
