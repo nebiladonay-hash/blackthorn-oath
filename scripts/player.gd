@@ -472,7 +472,11 @@ func _resolve_attack_hits() -> void:
 		print("MELEE_DEBUG_TARGET d=", d, " health=", enemy.get("health"))
 		# Three-lane combat: same lane only, and only in the forward sword arc.
 		if absf(d.x) < 1.5 and d.z > -3.8 and d.z < 1.2:
+			print("MELEE_DEBUG_HIT power=", attack_power, " before=", enemy.get("health"))
 			enemy.take_damage(attack_power)
+			print("MELEE_DEBUG_AFTER health=", enemy.get("health"))
+		else:
+			print("MELEE_DEBUG_MISS x=", d.x, " z=", d.z)
 
 func _play_game_sfx(kind: String) -> void:
 	var scene := get_tree().current_scene
