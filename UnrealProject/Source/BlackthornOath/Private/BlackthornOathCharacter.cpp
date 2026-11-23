@@ -1,6 +1,8 @@
 #include "BlackthornOathCharacter.h"
 
 #include "DrawDebugHelpers.h"
+#include "Components/CapsuleComponent.h"
+#include "TimerManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 
