@@ -78,3 +78,11 @@ Prototype 0.5.0 is an environment and cinematic vertical-slice upgrade, not a fi
 - Added runtime spatial SFX playback from two CC0 OpenGameArt sound packs.
 - Replaced the launcher emblem with a dark-fantasy cathedral/ember sigil.
 - Added automated runner, collision, lane, combat and visual screenshot checks.
+
+
+## 0.5.1 UI and audio art pass
+- The boot splash is a game-specific cathedral scene, not the previous badge. It is rendered from `assets/ui/blackthorn_splash.svg` to the PNG format required by Godot 4.4.
+- The square application icon is full-bleed cathedral key art with an eclipse and blackthorn silhouette.
+- Cinzel is bundled from Google Fonts under SIL Open Font License 1.1; the full OFL is included in `assets/fonts/OFL-Cinzel.txt`.
+- The in-game touch controls are icon-only beveled rune medallions. Lane movement uses the existing swipe controls, so redundant left/right screen buttons are removed.
+- CC0 audio sources: Kenney Impact Sounds via 3DValley for stone footsteps and steel impacts; artisticdude's CC0 Swishes Sound Pack on OpenGameArt for blade movement. Relic collection no longer triggers random high-pitched pickup dings.
