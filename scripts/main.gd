@@ -832,7 +832,7 @@ func _build_interface() -> void:
 	root_ui.add_child(hud)
 	var hud_panel := PanelContainer.new()
 	hud_panel.position = Vector2(24, 62)
-	hud_panel.size = Vector2(338, 132)
+	hud_panel.size = Vector2(338, 158)
 	hud_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.018, 0.016, 0.025, 0.76), Color(0.27, 0.17, 0.15), 10))
 	hud.add_child(hud_panel)
 	var stats := VBoxContainer.new()
@@ -924,7 +924,7 @@ func _build_interface() -> void:
 	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(controls_hint)
 
-	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 11, Color(0.67, 0.61, 0.61))
+	var footer := _label("BEST  %05d m    RELICS  %03d    COINS  %05d" % [best_distance, relic_bank, coin_wallet], 11, Color(0.67, 0.61, 0.61))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(footer)
 	menu_panel.hide()
@@ -1470,6 +1470,7 @@ func add_kill() -> void:
 func add_relic() -> void:
 	relics += 1
 	relic_bank += 1
+	coin_wallet += 10
 	_save_progress()
 	_update_hud()
 
