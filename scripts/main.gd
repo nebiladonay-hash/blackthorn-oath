@@ -889,15 +889,15 @@ func _build_interface() -> void:
 	pause_button = _button(controls, "Ⅱ", Vector2(-88, 61), Vector2(64, 54), _toggle_pause, Control.PRESET_TOP_RIGHT, 20)
 	flask_label = _label("FLASKS  0", 13, Color(0.95, 0.78, 0.48))
 	flask_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	flask_label.position = Vector2(-210, 72)
-	flask_label.size = Vector2(112, 30)
+	flask_label.position = Vector2(-230, 84)
+	flask_label.size = Vector2(150, 30)
 	flask_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	controls.add_child(flask_label)
-	var use_flask_button := _button(controls, "DRINK", Vector2(-210, 108), Vector2(88, 48), _use_healing_flask, Control.PRESET_TOP_RIGHT, 13)
+	var use_flask_button := _button(controls, "DRINK", Vector2(-210, 120), Vector2(88, 48), _use_healing_flask, Control.PRESET_TOP_RIGHT, 13)
 
-	tutorial_label = _label("SWIPE TO MOVE     ↑ JUMP     ↓ SLIDE     TAP STRIKE", 15, Color(0.95, 0.84, 0.69))
+	tutorial_label = _label("SWIPE TO MOVE     ↑ JUMP     ↓ SLIDE     TAP STRIKE", 14, Color(0.95, 0.84, 0.69))
 	tutorial_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	tutorial_label.position = Vector2(-420, 62)
+	tutorial_label.position = Vector2(-420, 88)
 	tutorial_label.size = Vector2(840, 34)
 	tutorial_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	tutorial_label.hide()
