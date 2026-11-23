@@ -60,37 +60,37 @@ download_asset "t1-sentinel.glb" \
   "https://pub-63ab27389d044634a73e89c1a0c6d4a6.r2.dev/free-library/3d-models/t1-sentinel/t1-sentinel.glb" \
   15000000
 
-# Curated sound design: every file has a known purpose; no random category scraping.
+# Curated CC0 combat and ambience sound design from 3DValley.
 SFX_DIR="audio/sfx/curated"
 mkdir -p "$SFX_DIR"
-curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-  "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_000/footstep_concrete_000.ogg" \
-  -o "$SFX_DIR/stone_step_01.ogg"
-curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-  "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_001/footstep_concrete_001.ogg" \
-  -o "$SFX_DIR/stone_step_02.ogg"
-curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-  "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_000/impactMetal_heavy_000.ogg" \
-  -o "$SFX_DIR/steel_impact_01.ogg"
-curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-  "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_001/impactMetal_heavy_001.ogg" \
-  -o "$SFX_DIR/steel_impact_02.ogg"
-
-SWISH_ARCHIVE="/tmp/blackthorn-swishes-cc0.zip"
-SWISH_DIR="/tmp/blackthorn-swishes"
-mkdir -p "$SWISH_DIR"
-curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-  "https://opengameart.org/sites/default/files/swishes.zip" -o "$SWISH_ARCHIVE"
-unzip -oq "$SWISH_ARCHIVE" -d "$SWISH_DIR"
-mapfile -t SWISH_FILES < <(find "$SWISH_DIR" -type f -iname '*.wav' | sort)
-if [[ "${#SWISH_FILES[@]}" -lt 8 ]]; then
-  echo "Expected 8 or more CC0 weapon swishes, found ${#SWISH_FILES[@]}" >&2
-  exit 1
-fi
-for index in {0..7}; do
-  printf -v output_name "sword_swing_%02d.wav" "$((index + 1))"
-  cp "${SWISH_FILES[$index]}" "$SFX_DIR/$output_name"
-done
+download_sfx() {
+  local url="$1"
+  local output="$2"
+  curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 "$url" -o "$output"
+  local size
+  size=$(stat -c%s "$output")
+  if [[ "$size" -lt 1024 ]]; then
+    echo "Invalid or empty audio asset: $output ($size bytes)" >&2
+    exit 1
+  fi
+  local signature
+  signature=$(head -c 4 "$output")
+  if [[ "$output" == *.ogg && "$signature" != "OggS" ]]; then
+    echo "Invalid OGG header: $output" >&2
+    exit 1
+  fi
+}
+download_sfx "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_000/footstep_concrete_000.ogg" "$SFX_DIR/stone_step_01.ogg"
+download_sfx "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_001/footstep_concrete_001.ogg" "$SFX_DIR/stone_step_02.ogg"
+download_sfx "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_000/impactMetal_heavy_000.ogg" "$SFX_DIR/steel_impact_01.ogg"
+download_sfx "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_001/impactMetal_heavy_001.ogg" "$SFX_DIR/steel_impact_02.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-rpg-sfx.blade_01/blade_01.ogg" "$SFX_DIR/sword_swing_01.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-rpg-sfx.blade_02/blade_02.ogg" "$SFX_DIR/sword_swing_02.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-rpg-sfx.blade_03/blade_03.ogg" "$SFX_DIR/sword_swing_03.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-creature-2.roar_05/roar_05.ogg" "$SFX_DIR/creature_roar_01.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-creature-2.roar_04/roar_04.ogg" "$SFX_DIR/creature_roar_02.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-rpg-sfx.creature_monster_01/creature_monster_01.ogg" "$SFX_DIR/creature_grunt_01.ogg"
+download_sfx "https://static.3dvalley.com/rd/rd-rpg-sfx.creature_roar_03/creature_roar_03.ogg" "$SFX_DIR/creature_roar_03.ogg"
 
 # Cinzel display typeface, SIL Open Font License 1.1.
 FONT_DIR="assets/fonts"
@@ -102,12 +102,12 @@ curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
   "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt" \
   -o "$FONT_DIR/OFL-Cinzel.txt"
 
-# Godot 4.4 boot splash only supports PNG. Render our custom SVG splash to PNG.
+# Godot 4.4 boot splash is raster-only. Render the custom SVG to PNG for startup.
 if ! command -v rsvg-convert >/dev/null 2>&1; then
   sudo apt-get update
   sudo apt-get install -y librsvg2-bin
 fi
 rsvg-convert --width 1600 --height 900 assets/ui/blackthorn_splash.svg -o assets/ui/blackthorn_splash.png
 
-echo "Curated audio files:"
+echo "Validated curated audio files:"
 find "$SFX_DIR" -maxdepth 1 -type f -printf '%f\\n' | sort
