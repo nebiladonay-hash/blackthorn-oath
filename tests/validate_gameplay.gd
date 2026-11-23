@@ -80,6 +80,7 @@ func _run_gameplay_checks() -> void:
 	enemy.configure(BlackthornOathEnemy.EnemyType.HOLLOW_GUARD)
 	enemy.position = player.position + Vector3(0.0, 0.0, -5.0)
 	scene.add_child(enemy)
+	enemy.attack_timer = 999.0
 	var enemy_z := enemy.global_position.z
 
 	for frame_index in range(90):
