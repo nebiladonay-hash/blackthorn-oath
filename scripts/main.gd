@@ -1437,7 +1437,7 @@ func _update_hud() -> void:
 	if not is_instance_valid(score_label) or not is_instance_valid(player):
 		return
 	score_label.text = "DISTANCE   %05d m      KILLS  %02d" % [int(distance), kills]
-	health_label.text = "VITALITY   " + "♥  ".repeat(player.health) + "♡  ".repeat(3 - player.health)
+	health_label.text = "VITALITY   " + "♥  ".repeat(player.health) + "♡  ".repeat(maxi(0, player.max_health - player.health))
 	relic_label.text = "RELICS   %03d    /    RESERVE  %03d" % [relics, relic_bank]
 	coin_label.text = "COINS   %05d" % coin_wallet
 	best_label.text = "BEST RUN   %05d m" % best_distance
