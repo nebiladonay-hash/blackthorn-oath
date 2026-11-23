@@ -42,3 +42,19 @@ download_asset "silver-knight.glb" \
 download_asset "t1-sentinel.glb" \
   "https://pub-63ab27389d044634a73e89c1a0c6d4a6.r2.dev/free-library/3d-models/t1-sentinel/t1-sentinel.glb" \
   15000000
+
+# CC0, OpenGameArt RPG Sound Pack by artisticdude: sword swishes, hits,
+# creature vocalizations, footsteps and UI/gameplay sounds.
+SFX_DIR="audio/sfx"
+mkdir -p "$SFX_DIR"
+SFX_ARCHIVE="/tmp/blackthorn-rpg-sound-pack.zip"
+if [[ ! -f "$SFX_DIR/.cc0-rpg-pack-installed" ]]; then
+  echo "Downloading CC0 RPG sound effects ..."
+  curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+    "https://opengameart.org/sites/default/files/rpg_sound_pack.zip" \
+    -o "$SFX_ARCHIVE"
+  unzip -oq "$SFX_ARCHIVE" -d "$SFX_DIR"
+  touch "$SFX_DIR/.cc0-rpg-pack-installed"
+fi
+echo "Available CC0 sound files:"
+find "$SFX_DIR" -type f \( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.mp3' \) -printf '%P\\n' | sort
