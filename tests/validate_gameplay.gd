@@ -56,12 +56,32 @@ func _run_gameplay_checks() -> void:
 
 	var enemy_health_before := enemy.health
 	player.attack()
+	await physics_frame
 	if enemy.health != enemy_health_before - 1:
 		push_error("GAMEPLAY_TEST: sword attack did not damage enemy")
 		scene.queue_free()
 		quit(5)
 		return
-	print("GAMEPLAY_COMBAT_OK enemy_health=", enemy.health)
+	if not str(player.imported_animation.current_animation).contains("sword_attack"):
+		push_error("GAMEPLAY_TEST: player sword attack animation did not start")
+		scene.queue_free()
+		quit(8)
+		return
+	if enemy.imported_animation == null or enemy.imported_animation.current_animation != "hit_chest":
+		push_error("GAMEPLAY_TEST: enemy hit reaction animation did not start")
+		scene.queue_free()
+		quit(9)
+		return
+	print("GAMEPLAY_COMBAT_OK player=", player.imported_animation.current_animation, " enemy=", enemy.imported_animation.current_animation)
+
+	player.attack_cooldown = 0.0
+	player.attack()
+	if not enemy.is_dead or enemy.imported_animation.current_animation != "death":
+		push_error("GAMEPLAY_TEST: enemy death animation did not start")
+		scene.queue_free()
+		quit(10)
+		return
+	print("GAMEPLAY_DEATH_OK ", enemy.imported_animation.current_animation)
 
 	player.move_lane(1)
 	for frame_index in range(30):
