@@ -58,3 +58,14 @@ if [[ ! -f "$SFX_DIR/.cc0-rpg-pack-installed" ]]; then
 fi
 echo "Available CC0 sound files:"
 find "$SFX_DIR" -type f \( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.mp3' \) -printf '%P\\n' | sort
+
+# CC0, OpenGameArt "100 CC0 SFX #2" includes varied footsteps and impact sounds.
+EXTRA_SFX_ARCHIVE="/tmp/blackthorn-cc0-sfx-100.zip"
+if [[ ! -f "$SFX_DIR/.cc0-sfx-100-installed" ]]; then
+  echo "Downloading CC0 footsteps and supplementary effects ..."
+  curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+    "https://opengameart.org/sites/default/files/sfx_100_v2.zip" \
+    -o "$EXTRA_SFX_ARCHIVE"
+  unzip -oq "$EXTRA_SFX_ARCHIVE" -d "$SFX_DIR"
+  touch "$SFX_DIR/.cc0-sfx-100-installed"
+fi
