@@ -11,6 +11,7 @@ func _run_gameplay_checks() -> void:
 		return
 	var scene := packed.instantiate()
 	root.add_child(scene)
+	current_scene = scene
 	await process_frame
 	scene._skip_intro()
 	scene._start_run()
