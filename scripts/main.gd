@@ -64,6 +64,7 @@ var daily_key: String = ""
 var daily_kills: int = 0
 var daily_relics: int = 0
 var daily_distance: int = 0
+var daily_distance_last_sample: int = 0
 var daily_claimed: Array[bool] = [false, false, false]
 var lifetime_kills: int = 0
 var lifetime_relics: int = 0
@@ -118,8 +119,10 @@ func _process(delta: float) -> void:
 
 	distance = maxf(distance, -player.global_position.z - 3.0)
 	var measured_distance := int(distance)
-	if measured_distance > daily_distance:
-		daily_distance = measured_distance
+	var distance_delta := maxi(0, measured_distance - daily_distance_last_sample)
+	daily_distance_last_sample = measured_distance
+	if distance_delta > 0:
+		daily_distance += distance_delta
 		_update_contracts_ui()
 	var elapsed: float = Time.get_ticks_msec() / 1000.0 - run_started_at
 	player.forward_speed = minf(12.0 + elapsed * 0.14, 18.5)
@@ -1119,6 +1122,7 @@ func _start_run() -> void:
 	controls.show()
 	pause_button.text = "Ⅱ"
 	player.forward_speed = 12.0
+	daily_distance_last_sample = int(distance)
 	run_started_at = Time.get_ticks_msec() / 1000.0
 	tutorial_timer = 5.0
 	tutorial_label.show()
@@ -1535,6 +1539,13 @@ func _load_progress() -> void:
 		lifetime_relics = int(save_data.get_value("lifetime", "relics", 0))
 		lifetime_runs = int(save_data.get_value("lifetime", "runs", 0))
 		lifetime_distance = int(save_data.get_value("lifetime", "distance", 0))
+		daily_key = str(save_data.get_value("daily", "date", ""))
+		daily_kills = int(save_data.get_value("daily", "kills", 0))
+		daily_relics = int(save_data.get_value("daily", "relics", 0))
+		daily_distance = int(save_data.get_value("daily", "distance", 0))
+		var loaded_claims: Array = save_data.get_value("daily", "claimed", [false, false, false])
+		if loaded_claims.size() >= 3:
+			daily_claimed = [bool(loaded_claims[0]), bool(loaded_claims[1]), bool(loaded_claims[2])]
 	_ensure_daily_contracts()
 
 func _save_progress() -> void:
@@ -1569,7 +1580,8 @@ func _open_contracts() -> void:
 	_ensure_daily_contracts()
 	_update_contracts_ui()
 	contracts_panel.show()
-	menu_panel.hide()
+	if is_instance_valid(menu_panel):
+		menu_panel.hide()
 
 func _close_contracts() -> void:
 	contracts_panel.hide()
