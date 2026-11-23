@@ -216,7 +216,7 @@ func _build_environment() -> void:
 	environment.ambient_light_energy = 1.15
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
-	environment.glow_intensity = 0.65
+	environment.glow_intensity = 0.42
 	environment.glow_bloom = 0.12
 	environment.glow_hdr_threshold = 0.92
 	environment.fog_enabled = true
@@ -231,7 +231,7 @@ func _build_environment() -> void:
 	var moonlight := DirectionalLight3D.new()
 	moonlight.rotation_degrees = Vector3(-35, -28, 0)
 	moonlight.light_color = Color(0.76, 0.79, 0.92)
-	moonlight.light_energy = 1.8
+	moonlight.light_energy = 1.45
 	moonlight.shadow_enabled = true
 	moonlight.directional_shadow_max_distance = 95.0
 	moonlight.shadow_bias = 0.035
@@ -272,10 +272,11 @@ func _build_cathedral_landmark() -> void:
 		if cathedral_scene != null:
 			var cathedral: Node3D = cathedral_scene.instantiate() as Node3D
 			cathedral.name = "ImportedGothicCathedral"
-			cathedral.position = Vector3(0, 0, -158)
-			cathedral.scale = Vector3(0.48, 0.48, 0.48)
+			cathedral.position = Vector3(0, 0, -145)
+			cathedral.scale = Vector3(0.64, 0.64, 0.64)
 			cathedral.rotation.y = PI
 			add_child(cathedral)
+			_apply_asset_tint(cathedral, Color(0.58, 0.60, 0.64, 1.0))
 			cathedral_added = true
 	if not cathedral_added:
 		_build_cathedral_fallback()
@@ -321,10 +322,10 @@ func _build_cathedral_landmark() -> void:
 
 	_add_gate_guardian(gatehouse)
 	portal_light = OmniLight3D.new()
-	portal_light.position = Vector3(0, 9.0, -8.6)
+	portal_light.position = Vector3(0, 8.2, -1.0)
 	portal_light.light_color = Color(0.92, 0.10, 0.025)
 	portal_light.light_energy = 0.45
-	portal_light.omni_range = 34.0
+	portal_light.omni_range = 24.0
 	gatehouse.add_child(portal_light)
 
 	# Broad forecourt steps establish a clear approach to the portal.
@@ -366,9 +367,10 @@ func _add_gate_guardian(parent: Node3D) -> void:
 			var sentinel: Node3D = sentinel_scene.instantiate() as Node3D
 			if sentinel != null:
 				sentinel.name = "RiggedBellWarden"
-				sentinel.scale = Vector3(4.1, 4.1, 4.1)
 				sentinel.rotation.y = PI
 				gate_guardian.add_child(sentinel)
+				_fit_asset_height(sentinel, 8.6)
+				_apply_asset_tint(sentinel, Color(1.12, 1.08, 1.02, 1.0))
 				var animation_nodes := sentinel.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					var animation_player := animation_nodes[0] as AnimationPlayer
@@ -686,51 +688,66 @@ func _build_interface() -> void:
 	controls.add_child(tutorial_label)
 
 	# CenterContainer provides consistent placement across phone aspect ratios.
-	var menu_center := CenterContainer.new()
-	menu_center.name = "CenteredTitleMenu"
-	menu_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root_ui.add_child(menu_center)
+		var menu_row := HBoxContainer.new()
+	menu_row.name = "TitleMenuLayout"
+	menu_row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu_row.offset_left = 28
+	menu_row.offset_right = -28
+	menu_row.offset_top = 42
+	menu_row.offset_bottom = -42
+	root_ui.add_child(menu_row)
+
+	var menu_slot := CenterContainer.new()
+	menu_slot.name = "TitleMenuSlot"
+	menu_slot.custom_minimum_size = Vector2(425, 0)
+	menu_slot.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	menu_row.add_child(menu_slot)
 
 	menu_panel = PanelContainer.new()
 	menu_panel.name = "TitleMenuPanel"
 	menu_panel.process_mode = Node.PROCESS_MODE_ALWAYS
-	menu_panel.custom_minimum_size = Vector2(520, 438)
+	menu_panel.custom_minimum_size = Vector2(410, 398)
 	menu_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	menu_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	menu_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.014, 0.012, 0.02, 0.95), Color(0.47, 0.23, 0.18), 14))
-	menu_center.add_child(menu_panel)
+	menu_slot.add_child(menu_panel)
+
+	var menu_spacer := Control.new()
+	menu_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_row.add_child(menu_spacer)
 
 	var menu_box := VBoxContainer.new()
 	menu_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	menu_box.add_theme_constant_override("separation", 17)
+	menu_box.add_theme_constant_override("separation", 13)
 	menu_panel.add_child(menu_box)
 
-	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 13, Color(0.8, 0.42, 0.31))
+	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 12, Color(0.8, 0.42, 0.31))
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(eyebrow)
 
-	var title := _label("BLACKTHORN\nOATH", 50, Color(0.96, 0.90, 0.81))
+	var title := _label("BLACKTHORN\nOATH", 43, Color(0.96, 0.90, 0.81))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("line_spacing", -8)
 	menu_box.add_child(title)
 
-	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral has begun to wake.", 16, Color(0.82, 0.76, 0.72))
+	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral has begun to wake.", 14, Color(0.82, 0.76, 0.72))
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(description)
 
-	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 62), _start_run, Control.PRESET_TOP_LEFT, 19)
+	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 56), _start_run, Control.PRESET_TOP_LEFT, 18)
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
-	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 13, Color(0.73, 0.68, 0.68))
+	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 12, Color(0.73, 0.68, 0.68))
 	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(controls_hint)
 
-	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 12, Color(0.67, 0.61, 0.61))
+	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 11, Color(0.67, 0.61, 0.61))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(footer)
 	menu_panel.hide()
 
-	modal_panel = _make_overlay_panel(root_ui, Vector2(460, 276))
+
+modal_panel = _make_overlay_panel(root_ui, Vector2(460, 276))
 	modal_panel.set_anchors_preset(Control.PRESET_CENTER)
 	modal_panel.position = Vector2(-230, -138)
 	modal_panel.hide()
@@ -758,42 +775,42 @@ func _update_cinematic(delta: float) -> void:
 	var t: float = intro_elapsed
 	if t < 4.2:
 		var amount: float = _ease(t / 4.2)
-		camera.global_position = Vector3(0.0, 36.0, -22.0).lerp(Vector3(0.0, 27.0, -60.0), amount)
-		camera.look_at(Vector3(0, 18.0, -158.0), Vector3.UP)
-		camera.fov = lerpf(52.0, 46.0, amount)
+		camera.global_position = Vector3(0.0, 34.0, -24.0).lerp(Vector3(0.0, 25.0, -59.0), amount)
+		camera.look_at(Vector3(0, 18.0, -145.0), Vector3.UP)
+		camera.fov = lerpf(50.0, 45.0, amount)
 		_set_cinematic_copy("THE NORTH ONCE KNEW THE SOUND OF BELLS.", "", 0.0)
 	elif t < 8.0:
 		var amount: float = _ease((t - 4.2) / 3.8)
-		camera.global_position = Vector3(0.0, 18.0, -66.0).lerp(Vector3(0.0, 13.0, -75.0), amount)
-		camera.look_at(Vector3(0, 5.2, -100.0), Vector3.UP)
-		camera.fov = lerpf(54.0, 50.0, amount)
+		camera.global_position = Vector3(0.0, 18.0, -66.0).lerp(Vector3(0.0, 10.5, -84.0), amount)
+		camera.look_at(Vector3(0.0, 5.7, -99.0), Vector3.UP)
+		camera.fov = lerpf(48.0, 39.0, amount)
 		var gate_amount: float = _ease((t - 5.1) / 2.55)
 		cathedral_gate_left.rotation.y = -1.38 * gate_amount
 		cathedral_gate_right.rotation.y = 1.38 * gate_amount
-		gate_guardian.visible = gate_amount > 0.24
-		portal_light.light_energy = 0.45 + gate_amount * 5.6
-		portal_light.light_color = Color(0.82, 0.045, 0.018).lerp(Color(1.0, 0.16, 0.035), gate_amount)
+		gate_guardian.visible = gate_amount > 0.2
+		portal_light.light_energy = 0.55 + gate_amount * 3.2
+		portal_light.light_color = Color(0.72, 0.035, 0.025).lerp(Color(1.0, 0.12, 0.035), gate_amount)
 		var reveal_line: String = "THEN THE BELLS BEGAN TO ANSWER THEMSELVES." if t < 6.35 else "SOMETHING ANSWERED FROM WITHIN."
 		_set_cinematic_copy(reveal_line, "", 0.0)
 	elif t < 11.5:
 		var amount: float = _ease((t - 8.0) / 3.5)
-		camera.global_position = Vector3(0.0, 13.0, -75.0).lerp(Vector3(0.0, 8.5, -78.0), amount)
-		camera.look_at(Vector3(0.0, 5.4, -100.0), Vector3.UP)
-		camera.fov = lerpf(50.0, 48.0, amount)
+		camera.global_position = Vector3(0.0, 10.5, -84.0).lerp(Vector3(0.0, 8.0, -88.5), amount)
+		camera.look_at(Vector3(0.0, 5.2, -99.0), Vector3.UP)
+		camera.fov = lerpf(39.0, 43.0, amount)
 		if t > 9.2:
-			camera.global_position += Vector3(sin(t * 18.0) * 0.025, cos(t * 14.0) * 0.018, 0.0)
+			camera.global_position += Vector3(sin(t * 18.0) * 0.018, cos(t * 14.0) * 0.014, 0.0)
 		_set_cinematic_copy("THE KINGDOM FELL. THE DEAD REMAINED.", "", 0.0)
 	elif t < 15.0:
 		var amount: float = _ease((t - 11.5) / 3.5)
-		camera.global_position = Vector3(2.6, 2.9, -10.5).lerp(Vector3(1.25, 3.2, -9.0), amount)
-		camera.look_at(Vector3(0.0, 1.1, -3.0), Vector3.UP)
-		camera.fov = lerpf(38.0, 42.0, amount)
+		camera.global_position = Vector3(0.4, 2.5, -8.4).lerp(Vector3(0.2, 2.75, -7.8), amount)
+		camera.look_at(Vector3(0.0, 1.05, -3.0), Vector3.UP)
+		camera.fov = lerpf(40.0, 44.0, amount)
 		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "", 0.0)
 	else:
 		var amount: float = _ease((t - 15.0) / 3.0)
-		camera.global_position = Vector3(1.8, 3.7, -9.2).lerp(Vector3(2.4, 4.0, -10.5), amount)
-		camera.look_at(Vector3(0.0, 1.15, -3.0), Vector3.UP)
-		camera.fov = lerpf(46.0, 48.0, amount)
+		camera.global_position = Vector3(0.4, 3.0, -8.0).lerp(Vector3(0.2, 3.2, -8.4), amount)
+		camera.look_at(Vector3(0.0, 1.1, -3.0), Vector3.UP)
+		camera.fov = lerpf(46.0, 44.0, amount)
 		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN\nOATH", 1.0)
 		if t >= INTRO_LENGTH:
 			_finish_intro()
@@ -814,6 +831,8 @@ func _set_cinematic_copy(subtitle: String, title: String, title_alpha: float) ->
 func _finish_intro() -> void:
 	intro_active = false
 	intro_complete = true
+	player.lane = 2
+	player.global_position.x = player.lane_width
 	subtitle_label.hide()
 	intro_title_label.hide()
 	intro_kicker_label.hide()
@@ -829,7 +848,7 @@ func _skip_intro() -> void:
 	cathedral_gate_left.rotation.y = -0.94
 	cathedral_gate_right.rotation.y = 0.94
 	gate_guardian.visible = true
-	portal_light.light_energy = 4.68
+	portal_light.light_energy = 3.75
 	_finish_intro()
 
 func _start_run() -> void:
@@ -838,6 +857,8 @@ func _start_run() -> void:
 	game_started = true
 	game_over = false
 	paused = false
+	player.lane = 1
+	player.global_position.x = 0.0
 	menu_panel.hide()
 	hud.show()
 	controls.show()
@@ -1184,11 +1205,17 @@ func _follow_camera(delta: float) -> void:
 func _idle_camera(delta: float) -> void:
 	if not is_instance_valid(camera) or not is_instance_valid(player):
 		return
+	if intro_complete and not game_started and not game_over:
+		var menu_camera_position: Vector3 = player.global_position + Vector3(-1.6, 3.2, -8.2)
+		camera.global_position = camera.global_position.lerp(menu_camera_position, minf(delta * 3.0, 1.0))
+		camera.look_at(player.global_position + Vector3(-0.85, 1.05, 0.0), Vector3.UP)
+		return
 	var time: float = Time.get_ticks_msec() / 1000.0
 	var sway := Vector3(sin(time * 0.19) * 0.28, 0.04 * sin(time * 0.3), 0.0)
 	var target_position: Vector3 = player.global_position + Vector3(0, 3.35, 6.8) + sway
 	camera.global_position = camera.global_position.lerp(target_position, minf(delta * 1.7, 1.0))
 	camera.look_at(player.global_position + Vector3(0, 1.0, -8.0), Vector3.UP)
+
 
 func _update_hud() -> void:
 	if not is_instance_valid(score_label) or not is_instance_valid(player):
@@ -1235,6 +1262,39 @@ func _save_progress() -> void:
 	save_data.set_value("progress", "best_distance", best_distance)
 	save_data.set_value("progress", "relic_bank", relic_bank)
 	save_data.save("user://blackthorn_oath.cfg")
+
+func _apply_asset_tint(root: Node3D, tint: Color) -> void:
+	for item in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := item as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		for surface_index in range(mesh_instance.mesh.get_surface_count()):
+			var source_material := mesh_instance.get_active_material(surface_index)
+			if source_material is BaseMaterial3D:
+				var adjusted := (source_material as BaseMaterial3D).duplicate() as BaseMaterial3D
+				adjusted.albedo_color = adjusted.albedo_color * tint
+				adjusted.roughness = maxf(adjusted.roughness, 0.58)
+				mesh_instance.set_surface_override_material(surface_index, adjusted)
+
+func _fit_asset_height(root: Node3D, target_height: float) -> void:
+	var combined := AABB()
+	var has_bounds := false
+	for item in root.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := item as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var relative_transform: Transform3D = root.global_transform.affine_inverse() * mesh_instance.global_transform
+		var mesh_bounds: AABB = mesh_instance.get_aabb() * relative_transform
+		if has_bounds:
+			combined = combined.merge(mesh_bounds)
+		else:
+			combined = mesh_bounds
+			has_bounds = true
+	if not has_bounds or combined.size.y <= 0.001:
+		return
+	var fit_scale: float = target_height / combined.size.y
+	root.scale = Vector3.ONE * fit_scale
+	root.position.y = -combined.position.y * fit_scale
 
 func _standard_material(color: Color, metallic: float = 0.0, roughness: float = 0.8, emission: Color = Color.BLACK, energy: float = 1.0) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
