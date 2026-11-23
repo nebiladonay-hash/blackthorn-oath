@@ -2,7 +2,7 @@
 
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
-## Prototype 0.4.3 — Cinematic Readability Pass
+## Prototype 0.4.4 — Hero Facing and Boss Identity
 
 This milestone corrects the environmental and cinematic issues found in the previous visual-review screenshots.
 
@@ -14,6 +14,9 @@ This milestone corrects the environmental and cinematic issues found in the prev
 - Replaced solid tunnel walls with spaced ruined cloister pillars, rare broken lintels and open side views.
 - Rebuilt the title screen as a two-column layout so the story card no longer hides the playable knight.
 - Added a cool front key light and warm rim light to show the silver plate and purple cape.
+- Corrected the knight's forward axis separately for the front-facing intro, title-menu portrait and -Z runner gameplay.
+- Changed the title camera to look down the cathedral approach from behind the hero while showing his face.
+- Darkened the Bell Warden's imported armor and added crown spikes and emissive eyes.
 - Fitted the Bell Warden to a known world height and brought the camera close enough to read its silhouette.
 - Moved portal lighting to the camera-facing side of the Warden.
 - Tinted the imported cathedral's PBR materials while preserving their texture maps, and increased its landmark scale.
@@ -49,4 +52,4 @@ Open the repository in Godot 4.4.1 with matching export templates. GitHub Action
 
 ## Honest status
 
-Prototype 0.4.3 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
+Prototype 0.4.4 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
