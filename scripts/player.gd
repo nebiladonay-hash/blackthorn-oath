@@ -12,6 +12,8 @@ signal died
 
 var lane := 1
 var health := 3
+var max_health := 3
+var attack_power := 1
 var dead := false
 var invulnerability := 0.0
 var attack_cooldown := 0.0
@@ -467,7 +469,7 @@ func _resolve_attack_hits() -> void:
 		var d: Vector3 = enemy.global_position - global_position
 		# Three-lane combat: same lane only, and only in the forward sword arc.
 		if absf(d.x) < 1.5 and d.z > -3.2 and d.z < 0.8:
-			enemy.take_damage(1)
+			enemy.take_damage(attack_power)
 
 func _play_game_sfx(kind: String) -> void:
 	var scene := get_tree().current_scene
