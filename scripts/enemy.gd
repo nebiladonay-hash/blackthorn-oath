@@ -1,6 +1,8 @@
 extends StaticBody3D
 class_name BlackthornOathEnemy
 
+const SENTINEL_MODEL_PATH := "res://assets/models/t1-sentinel.glb"
+
 enum EnemyType { HOLLOW_GUARD, BLOODHOUND, EXECUTIONER }
 
 var archetype: int = EnemyType.HOLLOW_GUARD
@@ -16,6 +18,10 @@ var base_colors: Array[Color] = []
 var hit_flash := 0.0
 var attack_windup := 0.0
 var body_root: Node3D
+var imported_model: Node3D
+var imported_animation: AnimationPlayer
+var death_timer := 0.0
+var animation_return_timer := 0.0
 
 func configure(kind: int) -> void:
 	archetype = clampi(kind, 0, 2)
@@ -46,8 +52,17 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player") as BlackthornOathPlayer
 
 func _process(delta: float) -> void:
-	if is_dead or not is_instance_valid(player) or player.dead:
+	if is_dead:
+		death_timer -= delta
+		if death_timer <= 0.0:
+			queue_free()
 		return
+	if not is_instance_valid(player) or player.dead:
+		return
+	if animation_return_timer > 0.0:
+		animation_return_timer = maxf(0.0, animation_return_timer - delta)
+		if animation_return_timer <= 0.0:
+			_play_enemy_animation("idle")
 	attack_timer = maxf(0.0, attack_timer - delta)
 	if hit_flash > 0.0:
 		hit_flash = maxf(0.0, hit_flash - delta)
@@ -62,10 +77,12 @@ func _process(delta: float) -> void:
 	if distance_z < 1.9 and distance_x < 1.05 and attack_timer <= 0.0:
 		if attack_windup <= 0.0:
 			attack_windup = 0.3
+			_play_enemy_animation("sword_attack")
 		elif attack_windup < 0.12:
 			player.take_damage(damage)
 			attack_timer = attack_interval
 			attack_windup = 0.0
+			animation_return_timer = 0.48
 	elif distance_z >= 1.9:
 		attack_windup = 0.0
 
@@ -80,14 +97,31 @@ func take_damage(amount: int = 1) -> void:
 	_set_flash(true)
 	if health <= 0:
 		is_dead = true
+		_play_enemy_animation("death")
+		death_timer = 0.9
 		var main := get_tree().current_scene
 		if main and main.has_method("add_kill"):
 			main.add_kill()
-		queue_free()
+	else:
+		_play_enemy_animation("hit_chest")
+		animation_return_timer = 0.38
 
 func _build_enemy() -> void:
 	visual_root = Node3D.new()
 	add_child(visual_root)
+	if ResourceLoader.exists(SENTINEL_MODEL_PATH):
+		var packed := load(SENTINEL_MODEL_PATH) as PackedScene
+		if packed != null:
+			imported_model = packed.instantiate() as Node3D
+			if imported_model != null:
+				imported_model.name = "AnimatedHollowSentinel"
+				visual_root.add_child(imported_model)
+				_fit_imported_model(imported_model, 2.15)
+				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
+				if not animation_nodes.is_empty():
+					imported_animation = animation_nodes[0] as AnimationPlayer
+				_play_enemy_animation("idle")
+				return
 	var armor := _mat(Color(0.11, 0.095, 0.10), 0.7, 0.55)
 	var dark := _mat(Color(0.035, 0.03, 0.04), 0.55, 0.8)
 	var bone := _mat(Color(0.48, 0.43, 0.36), 0.05, 0.9)
@@ -146,6 +180,32 @@ func _build_executioner(armor: Material, dark: Material, rust: Material, eye: Ma
 		_capsule(visual_root, Vector3(side * 0.24, 0.42, 0), 0.19, 0.82, dark)
 	_box(visual_root, Vector3(0.82, 1.0, -0.1), Vector3(0.16, 1.25, 0.16), rust)
 	_box(visual_root, Vector3(0.82, 1.2, -0.1), Vector3(0.72, 0.36, 0.15), armor)
+
+func _play_enemy_animation(animation_name: String) -> void:
+	if imported_animation == null or not imported_animation.has_animation(animation_name):
+		return
+	if imported_animation.current_animation != animation_name:
+		imported_animation.play(animation_name)
+
+func _fit_imported_model(model: Node3D, target_height: float) -> void:
+	var combined := AABB()
+	var has_bounds := false
+	for item in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_instance := item as MeshInstance3D
+		if mesh_instance == null or mesh_instance.mesh == null:
+			continue
+		var relative_transform: Transform3D = model.global_transform.affine_inverse() * mesh_instance.global_transform
+		var mesh_bounds: AABB = mesh_instance.get_aabb() * relative_transform
+		if has_bounds:
+			combined = combined.merge(mesh_bounds)
+		else:
+			combined = mesh_bounds
+			has_bounds = true
+	if not has_bounds or combined.size.y <= 0.001:
+		return
+	var fit_scale: float = target_height / combined.size.y
+	model.scale = Vector3.ONE * fit_scale
+	model.position.y = -combined.position.y * fit_scale
 
 func _set_flash(active: bool) -> void:
 	for i in range(flash_materials.size()):
