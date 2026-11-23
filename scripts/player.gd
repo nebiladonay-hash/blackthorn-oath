@@ -31,6 +31,7 @@ var left_leg: Node3D
 var right_leg: Node3D
 var body_material: StandardMaterial3D
 var run_clock := 0.0
+var footstep_timer := 0.0
 var standing_height := 1.85
 var sliding_height := 0.95
 
@@ -83,6 +84,14 @@ func _physics_process(delta: float) -> void:
 	elif velocity.y < 0.0:
 		velocity.y = 0.0
 	move_and_slide()
+
+	if forward_speed > 0.1 and is_on_floor() and slide_timer <= 0.0:
+		footstep_timer -= delta
+		if footstep_timer <= 0.0:
+			footstep_timer = clampf(0.42 - forward_speed * 0.012, 0.22, 0.38)
+			_play_game_sfx("footstep")
+	else:
+		footstep_timer = 0.0
 
 	if using_imported_model:
 		_update_imported_animation(delta)
@@ -409,6 +418,7 @@ func attack() -> void:
 		return
 	attack_cooldown = 0.58
 	attack_animation = 0.32
+	_play_game_sfx("sword")
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy):
 			continue
@@ -416,9 +426,15 @@ func attack() -> void:
 		if absf(d.x) < 1.5 and d.z > -3.2 and d.z < 0.8:
 			enemy.take_damage(1)
 
+func _play_game_sfx(kind: String) -> void:
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("play_sfx"):
+		scene.call("play_sfx", kind, global_position)
+
 func take_damage(amount: int = 1) -> void:
 	if dead or invulnerability > 0.0:
 		return
+	_play_game_sfx("impact")
 	health = maxi(0, health - amount)
 	invulnerability = 1.0
 	health_changed.emit(health)
