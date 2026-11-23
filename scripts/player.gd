@@ -170,17 +170,17 @@ func _build_character() -> void:
 func face_for_cinematic() -> void:
 	if using_imported_model and imported_model != null:
 		# The reveal camera is ahead of the runner on -Z.
-		imported_model.rotation.y = 0.0
+		imported_model.rotation.y = PI
 
 func face_for_menu() -> void:
 	if using_imported_model and imported_model != null:
-		# The title camera sits behind the start line on +Z.
-		imported_model.rotation.y = PI
+		# The title camera is behind the start line on +Z.
+		imported_model.rotation.y = 0.0
 
 func face_for_run() -> void:
 	if using_imported_model and imported_model != null:
-		# The runner travels down -Z; face the road, not the chase camera.
-		imported_model.rotation.y = 0.0
+		# The chase camera sits behind the runner; the road is -Z.
+		imported_model.rotation.y = PI
 
 func _fit_imported_model(model: Node3D, target_height: float) -> void:
 	var combined := AABB()
