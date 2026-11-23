@@ -36,8 +36,6 @@ func _on_body_entered(body: Node3D) -> void:
 		return
 	collected = true
 	var main := get_tree().current_scene
-	if main and main.has_method("play_sfx"):
-		main.call("play_sfx", "pickup", global_position)
 	if main and main.has_method("add_relic"):
 		main.add_relic()
 	queue_free()
