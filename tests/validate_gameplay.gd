@@ -40,6 +40,23 @@ func _run_gameplay_checks() -> void:
 	player.attack_power = 1
 	print("GAMEPLAY_ECONOMY_OK wallet=", scene.coin_wallet, " blade_level=", scene.blade_level)
 
+	# Daily contract claim must pay once, persist its claimed state, and reject duplicates.
+	var wallet_before_contract: int = scene.coin_wallet
+	scene.daily_kills = 10
+	scene._claim_contract(0)
+	if scene.coin_wallet != wallet_before_contract + 60 or not scene.daily_claimed[0]:
+		push_error("GAMEPLAY_TEST: completed daily kill contract did not pay")
+		scene.queue_free()
+		quit(13)
+		return
+	scene._claim_contract(0)
+	if scene.coin_wallet != wallet_before_contract + 60:
+		push_error("GAMEPLAY_TEST: daily contract reward could be claimed twice")
+		scene.queue_free()
+		quit(14)
+		return
+	print("GAMEPLAY_DAILY_CONTRACT_OK reward=60")
+
 	var enemy := BlackthornOathEnemy.new()
 	enemy.configure(BlackthornOathEnemy.EnemyType.HOLLOW_GUARD)
 	enemy.position = player.position + Vector3(0.0, 0.0, -5.0)
