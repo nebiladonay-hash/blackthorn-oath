@@ -452,6 +452,7 @@ func _set_sliding(enabled: bool) -> void:
 	sword_pivot.visible = not enabled
 
 func attack() -> void:
+	print("MELEE_DEBUG_INPUT dead=", dead, " cooldown=", attack_cooldown, " slide=", slide_timer)
 	if attack_cooldown > 0.0 or slide_timer > 0.0 or dead:
 		return
 	attack_cooldown = 0.58
@@ -463,10 +464,12 @@ func attack() -> void:
 	_play_game_sfx("sword")
 
 func _resolve_attack_hits() -> void:
+	print("MELEE_DEBUG_RESOLVE player=", global_position, " enemies=", get_tree().get_nodes_in_group("enemies").size())
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		if not is_instance_valid(enemy) or not enemy.has_method("take_damage"):
 			continue
 		var d: Vector3 = enemy.global_position - global_position
+		print("MELEE_DEBUG_TARGET d=", d, " health=", enemy.get("health"))
 		# Three-lane combat: same lane only, and only in the forward sword arc.
 		if absf(d.x) < 1.5 and d.z > -3.8 and d.z < 1.2:
 			enemy.take_damage(attack_power)
