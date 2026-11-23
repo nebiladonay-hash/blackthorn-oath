@@ -685,25 +685,46 @@ func _build_interface() -> void:
 	tutorial_label.hide()
 	controls.add_child(tutorial_label)
 
-	menu_panel = _make_overlay_panel(root_ui, Vector2(520, 438))
-	menu_panel.set_anchors_preset(Control.PRESET_CENTER)
-	menu_panel.position = Vector2(-260, -219)
+	# CenterContainer provides consistent placement across phone aspect ratios.
+	var menu_center := CenterContainer.new()
+	menu_center.name = "CenteredTitleMenu"
+	menu_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root_ui.add_child(menu_center)
+
+	menu_panel = PanelContainer.new()
+	menu_panel.name = "TitleMenuPanel"
+	menu_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	menu_panel.custom_minimum_size = Vector2(520, 438)
+	menu_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	menu_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	menu_panel.add_theme_stylebox_override("panel", _panel_style(Color(0.014, 0.012, 0.02, 0.95), Color(0.47, 0.23, 0.18), 14))
+	menu_center.add_child(menu_panel)
+
 	var menu_box := VBoxContainer.new()
 	menu_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	menu_box.add_theme_constant_override("separation", 17)
 	menu_panel.add_child(menu_box)
+
 	var eyebrow := _label("THE ASHEN KINGDOM  /  CHAPTER I", 13, Color(0.8, 0.42, 0.31))
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(eyebrow)
-	var title := _label("BLACKTHORN\nOATH", 49, Color(0.95, 0.89, 0.79))
+
+	var title := _label("BLACKTHORN\\nOATH", 50, Color(0.96, 0.90, 0.81))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("line_spacing", -8)
 	menu_box.add_child(title)
-	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral has begun to wake.", 16, Color(0.74, 0.69, 0.68))
+
+	var description := _label("The bells have fallen silent.\\nSomething beneath the cathedral has begun to wake.", 16, Color(0.82, 0.76, 0.72))
+	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(description)
+
 	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 62), _start_run, Control.PRESET_TOP_LEFT, 19)
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var controls_hint := _label("SWIPE  move / jump / slide     •     TAP  strike", 13, Color(0.67, 0.62, 0.64))
+
+	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 13, Color(0.73, 0.68, 0.68))
+	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(controls_hint)
+
 	var footer := _label("BEST  %05d m        RELICS  %03d" % [best_distance, relic_bank], 12, Color(0.67, 0.61, 0.61))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(footer)
@@ -989,9 +1010,9 @@ func _add_segment_architecture(parent: Node3D, serial: int) -> void:
 		else:
 			_add_broken_column(parent, side * 7.4, 7.0, -23.0)
 
-	# Two transverse gothic ribs add rhythm and scale without enclosing the run.
-	for arch_z in [-7.5, -24.5]:
-		_add_front_gothic_arch(parent, Vector3(0, 0.0, arch_z), 12.2, 8.3, 0.8, worn_stone_material)
+	# Keep the corridor open to the skyline; only rare broken lintels cross a side bay.
+	if serial % 5 == 0:
+		_box(parent, Vector3(0, 7.8, -24.5), Vector3(6.4, 0.38, 0.65), worn_stone_material)
 
 	# Broken parapets and stone fragments keep the road edges visually grounded.
 	for debris_index in range(7):
