@@ -2,6 +2,7 @@
 
 #include "BlackthornOathCharacter.h"
 #include "Engine/World.h"
+#include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 
 ABlackthornEnemy::ABlackthornEnemy()
