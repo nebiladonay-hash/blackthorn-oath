@@ -170,17 +170,40 @@ func _run_gameplay_checks() -> void:
 		return
 	var boss_wallet_before: int = scene.coin_wallet
 	var boss_relics_before: int = scene.relic_bank
-	boss.take_damage(6)
-	if boss.health != 6 or boss.is_dead or not boss.phase_two or boss.damage != 2:
-		push_error("GAMEPLAY_TEST: boss enraged phase did not activate at half health")
+	player.forward_speed = 0.0
+	boss.global_position = player.global_position + Vector3(0.0, 0.0, -10.0)
+	boss.slam_cooldown = 0.0
+	boss._process(0.01)
+	if boss.slam_warning <= 0.0:
+		push_error("GAMEPLAY_TEST: boss heavy strike did not telegraph")
+		scene.queue_free()
+		quit(22)
+		return
+	player.global_position.z = boss.global_position.z + 2.8
+	var health_before_slam: int = player.health
+	boss._process(0.8)
+	if player.health != health_before_slam - 1:
+		push_error("GAMEPLAY_TEST: warned boss strike failed to hit a player who stayed in its lane")
+		scene.queue_free()
+		quit(23)
+		return
+	boss.take_damage(4)
+	if boss.health != 8 or boss.phase != 2 or boss.is_dead:
+		push_error("GAMEPLAY_TEST: boss did not transition into phase two at eight health")
 		scene.queue_free()
 		quit(18)
 		return
-	boss.take_damage(5)
-	if boss.health != 1 or boss.is_dead:
-		push_error("GAMEPLAY_TEST: boss damage did not preserve final health point")
+	boss.take_damage(4)
+	if boss.health != 4 or boss.phase != 3 or boss.is_dead:
+		push_error("GAMEPLAY_TEST: boss did not transition into phase three at four health")
 		scene.queue_free()
-		quit(22)
+		quit(24)
+		return
+	boss.take_damage(3)
+	if boss.health != 1 or boss.is_dead:
+		push_error("GAMEPLAY_TEST: phase-three boss health was not retained correctly")
+		scene.queue_free()
+		quit(25)
 		return
 	boss.take_damage(1)
 	if not boss.is_dead or not boss.reward_paid:
@@ -199,7 +222,7 @@ func _run_gameplay_checks() -> void:
 		scene.queue_free()
 		quit(21)
 		return
-	print("GAMEPLAY_BOSS_OK health=12 reward=50 coins+3 relics")
+	print("GAMEPLAY_BOSS_OK phases=3 telegraph=passed reward=50 coins+3 relics")
 
 	print("GAMEPLAY_VALIDATION_COMPLETE")
 	scene.queue_free()
