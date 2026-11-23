@@ -16,6 +16,8 @@ var dead := false
 var invulnerability := 0.0
 var attack_cooldown := 0.0
 var attack_animation := 0.0
+var attack_hit_timer := 0.0
+var attack_hit_pending := false
 var slide_timer := 0.0
 
 var hit_shape: CollisionShape3D
@@ -56,6 +58,11 @@ func _physics_process(delta: float) -> void:
 		return
 	invulnerability = maxf(0.0, invulnerability - delta)
 	attack_cooldown = maxf(0.0, attack_cooldown - delta)
+	if attack_hit_pending:
+		attack_hit_timer = maxf(0.0, attack_hit_timer - delta)
+		if attack_hit_timer <= 0.0:
+			attack_hit_pending = false
+			_resolve_attack_hits()
 	if slide_timer > 0.0:
 		slide_timer = maxf(0.0, slide_timer - delta)
 		if slide_timer == 0.0:
@@ -442,15 +449,22 @@ func _set_sliding(enabled: bool) -> void:
 	sword_pivot.visible = not enabled
 
 func attack() -> void:
-	if attack_cooldown > 0.0 or slide_timer > 0.0:
+	if attack_cooldown > 0.0 or slide_timer > 0.0 or dead:
 		return
 	attack_cooldown = 0.58
 	attack_animation = 0.62 if using_imported_model else 0.32
+	# Separate the weapon wind-up from the damage frame. The hit lands after
+	# the blade has started moving, not on the input frame.
+	attack_hit_timer = 0.19 if using_imported_model else 0.11
+	attack_hit_pending = true
 	_play_game_sfx("sword")
+
+func _resolve_attack_hits() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if not is_instance_valid(enemy):
+		if not is_instance_valid(enemy) or not enemy.has_method("take_damage"):
 			continue
 		var d: Vector3 = enemy.global_position - global_position
+		# Three-lane combat: same lane only, and only in the forward sword arc.
 		if absf(d.x) < 1.5 and d.z > -3.2 and d.z < 0.8:
 			enemy.take_damage(1)
 
