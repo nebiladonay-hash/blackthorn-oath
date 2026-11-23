@@ -78,6 +78,7 @@ func _run_gameplay_checks() -> void:
 
 	player.attack_cooldown = 0.0
 	player.attack()
+	await create_timer(0.24).timeout
 	if not enemy.is_dead or enemy.imported_animation.current_animation != "death":
 		push_error("GAMEPLAY_TEST: enemy death animation did not start")
 		scene.queue_free()
