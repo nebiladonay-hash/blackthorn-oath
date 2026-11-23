@@ -370,14 +370,26 @@ func _add_gate_guardian(parent: Node3D) -> void:
 				sentinel.rotation.y = PI
 				gate_guardian.add_child(sentinel)
 				_fit_asset_height(sentinel, 8.6)
-				_apply_asset_tint(sentinel, Color(1.12, 1.08, 1.02, 1.0))
+				_apply_asset_tint(sentinel, Color(0.36, 0.34, 0.40, 1.0))
 				var animation_nodes := sentinel.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					var animation_player := animation_nodes[0] as AnimationPlayer
 					if animation_player.has_animation("idle"):
 						animation_player.play("idle")
-				_make_spire(gate_guardian, Vector3(-0.48, 7.1, 0.1), 2.0, 0.19, metal_material)
-				_make_spire(gate_guardian, Vector3(0.48, 7.1, 0.1), 2.0, 0.19, metal_material)
+				# Broken crown spikes and red eyes give the sentinel its own boss identity.
+				_make_spire(gate_guardian, Vector3(-0.5, 7.45, 0.05), 2.25, 0.22, dark_stone_material)
+				_make_spire(gate_guardian, Vector3(0.5, 7.45, 0.05), 2.25, 0.22, dark_stone_material)
+				var warden_eyes := _standard_material(Color(0.95, 0.018, 0.008), 0.08, 0.18, Color(1.0, 0.008, 0.002), 4.8)
+				for face_z in [-0.42, 0.42]:
+					_sphere(gate_guardian, Vector3(-0.2, 7.12, face_z), Vector3(0.12, 0.09, 0.055), warden_eyes)
+					_sphere(gate_guardian, Vector3(0.2, 7.12, face_z), Vector3(0.12, 0.09, 0.055), warden_eyes)
+				var eye_light := OmniLight3D.new()
+				eye_light.position = Vector3(0, 7.1, 0)
+				eye_light.light_color = Color(1.0, 0.025, 0.008)
+				eye_light.light_energy = 0.65
+				eye_light.omni_range = 3.2
+				eye_light.shadow_enabled = false
+				gate_guardian.add_child(eye_light)
 				_sphere(gate_guardian, Vector3(0, 3.8, -0.42), Vector3(0.3, 0.42, 0.08), ember_material)
 				return
 
@@ -933,6 +945,7 @@ func _finish_intro() -> void:
 	intro_complete = true
 	player.lane = 2
 	player.global_position.x = player.lane_width
+	player.face_for_menu()
 	subtitle_label.hide()
 	intro_title_label.hide()
 	intro_kicker_label.hide()
@@ -959,6 +972,7 @@ func _start_run() -> void:
 	paused = false
 	player.lane = 1
 	player.global_position.x = 0.0
+	player.face_for_run()
 	menu_panel.hide()
 	hud.show()
 	controls.show()
@@ -1306,9 +1320,11 @@ func _idle_camera(delta: float) -> void:
 	if not is_instance_valid(camera) or not is_instance_valid(player):
 		return
 	if intro_complete and not game_started and not game_over:
-		var menu_camera_position: Vector3 = player.global_position + Vector3(-1.6, 3.2, -8.2)
+		# Front hero portrait from the starting side, with the cathedral approach behind him.
+		var menu_camera_position: Vector3 = player.global_position + Vector3(-0.55, 2.9, 7.4)
 		camera.global_position = camera.global_position.lerp(menu_camera_position, minf(delta * 3.0, 1.0))
-		camera.look_at(player.global_position + Vector3(-0.85, 1.05, 0.0), Vector3.UP)
+		camera.look_at(player.global_position + Vector3(-0.25, 1.05, -5.0), Vector3.UP)
+		camera.fov = lerpf(camera.fov, 45.0, delta * 2.0)
 		return
 	var time: float = Time.get_ticks_msec() / 1000.0
 	var sway := Vector3(sin(time * 0.19) * 0.28, 0.04 * sin(time * 0.3), 0.0)
