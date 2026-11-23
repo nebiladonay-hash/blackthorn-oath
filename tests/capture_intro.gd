@@ -22,6 +22,14 @@ func _print_rig_report(scene: Node3D, node_name: String, label: String) -> void:
 	for animation_node in model.find_children("*", "AnimationPlayer", true, false):
 		var animation_player := animation_node as AnimationPlayer
 		print(label, "_RIG_ANIMATIONS ", animation_player.get_animation_list())
+		var diagnostic_names := ["sprint", "walk", "sword_attack", "sword_block"]
+		for diagnostic_name in diagnostic_names:
+			if animation_player.has_animation(diagnostic_name):
+				var clip := animation_player.get_animation(diagnostic_name)
+				var paths := PackedStringArray()
+				for track_index in range(mini(clip.get_track_count(), 8)):
+					paths.append(str(clip.track_get_path(track_index)))
+				print(label, "_TRACK_PATHS ", diagnostic_name, " ", paths)
 	for skeleton_node in model.find_children("*", "Skeleton3D", true, false):
 		var skeleton := skeleton_node as Skeleton3D
 		var names := PackedStringArray()
