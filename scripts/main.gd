@@ -256,12 +256,12 @@ func _build_player_and_camera() -> void:
 	camera = Camera3D.new()
 	camera.name = "CinematicCamera"
 	camera.current = true
-	camera.fov = 43.0
+	camera.fov = 54.0
 	camera.near = 0.08
 	camera.far = 320.0
 	camera.position = Vector3(22.0, 15.5, 20.0)
 	add_child(camera)
-	camera.look_at(Vector3(0, 15.0, -108.0), Vector3.UP)
+	camera.look_at(Vector3(0, 16.0, -154.0), Vector3.UP)
 
 func _build_cathedral_landmark() -> void:
 	# A full-scale cathedral mesh anchors the skyline. The foreground gatehouse is
@@ -321,10 +321,10 @@ func _build_cathedral_landmark() -> void:
 
 	_add_gate_guardian(gatehouse)
 	portal_light = OmniLight3D.new()
-	portal_light.position = Vector3(0, 7.0, -5.4)
+	portal_light.position = Vector3(0, 9.0, -8.6)
 	portal_light.light_color = Color(0.92, 0.10, 0.025)
-	portal_light.light_energy = 0.28
-	portal_light.omni_range = 27.0
+	portal_light.light_energy = 0.45
+	portal_light.omni_range = 34.0
 	gatehouse.add_child(portal_light)
 
 	# Broad forecourt steps establish a clear approach to the portal.
@@ -623,9 +623,9 @@ func _build_interface() -> void:
 	root_ui.add_child(intro_kicker_label)
 
 	intro_title_label = _label("", 54, Color(0.95, 0.88, 0.78))
-	intro_title_label.set_anchors_preset(Control.PRESET_CENTER)
-	intro_title_label.position = Vector2(-310, -100)
-	intro_title_label.size = Vector2(620, 205)
+	intro_title_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	intro_title_label.position = Vector2(-310, 85)
+	intro_title_label.size = Vector2(620, 155)
 	intro_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro_title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro_title_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.92))
@@ -737,46 +737,43 @@ func _update_cinematic(delta: float) -> void:
 	var t: float = intro_elapsed
 	if t < 4.2:
 		var amount: float = _ease(t / 4.2)
-		camera.global_position = Vector3(36.0, 31.0, -18.0).lerp(Vector3(24.0, 24.0, -64.0), amount)
-		camera.look_at(Vector3(0, 19.0, -158.0), Vector3.UP)
-		camera.fov = lerpf(44.0, 38.0, amount)
+		camera.global_position = Vector3(0.0, 36.0, -22.0).lerp(Vector3(0.0, 27.0, -60.0), amount)
+		camera.look_at(Vector3(0, 18.0, -158.0), Vector3.UP)
+		camera.fov = lerpf(52.0, 46.0, amount)
 		_set_cinematic_copy("THE NORTH ONCE KNEW THE SOUND OF BELLS.", "", 0.0)
 	elif t < 8.0:
 		var amount: float = _ease((t - 4.2) / 3.8)
-		camera.global_position = Vector3(24.0, 24.0, -64.0).lerp(Vector3(7.5, 11.0, -86.0), amount)
-		camera.look_at(Vector3(0, 9.0, -100.0), Vector3.UP)
-		camera.fov = lerpf(38.0, 34.0, amount)
+		camera.global_position = Vector3(0.0, 18.0, -66.0).lerp(Vector3(0.0, 13.0, -75.0), amount)
+		camera.look_at(Vector3(0, 5.2, -100.0), Vector3.UP)
+		camera.fov = lerpf(54.0, 50.0, amount)
 		var gate_amount: float = _ease((t - 5.1) / 2.55)
-		cathedral_gate_left.rotation.y = -1.12 * gate_amount
-		cathedral_gate_right.rotation.y = 1.12 * gate_amount
+		cathedral_gate_left.rotation.y = -1.38 * gate_amount
+		cathedral_gate_right.rotation.y = 1.38 * gate_amount
 		gate_guardian.visible = gate_amount > 0.24
-		portal_light.light_energy = 0.28 + gate_amount * 5.6
+		portal_light.light_energy = 0.45 + gate_amount * 5.6
 		portal_light.light_color = Color(0.82, 0.045, 0.018).lerp(Color(1.0, 0.16, 0.035), gate_amount)
 		var reveal_line: String = "THEN THE BELLS BEGAN TO ANSWER THEMSELVES." if t < 6.35 else "SOMETHING ANSWERED FROM WITHIN."
 		_set_cinematic_copy(reveal_line, "", 0.0)
 	elif t < 11.5:
 		var amount: float = _ease((t - 8.0) / 3.5)
-		camera.global_position = Vector3(7.5, 11.0, -86.0).lerp(Vector3(0.0, 7.0, -88.5), amount)
-		camera.look_at(Vector3(0.0, 6.0, -100.0), Vector3.UP)
-		camera.fov = lerpf(34.0, 30.0, amount)
+		camera.global_position = Vector3(0.0, 13.0, -75.0).lerp(Vector3(0.0, 8.5, -78.0), amount)
+		camera.look_at(Vector3(0.0, 5.4, -100.0), Vector3.UP)
+		camera.fov = lerpf(50.0, 48.0, amount)
 		if t > 9.2:
 			camera.global_position += Vector3(sin(t * 18.0) * 0.025, cos(t * 14.0) * 0.018, 0.0)
 		_set_cinematic_copy("THE KINGDOM FELL. THE DEAD REMAINED.", "", 0.0)
 	elif t < 15.0:
 		var amount: float = _ease((t - 11.5) / 3.5)
-		# Front-facing hero portrait: show the helm, chest, sword and cape silhouette.
 		camera.global_position = Vector3(2.6, 2.9, -10.5).lerp(Vector3(1.25, 3.2, -9.0), amount)
 		camera.look_at(Vector3(0.0, 1.1, -3.0), Vector3.UP)
 		camera.fov = lerpf(38.0, 42.0, amount)
-		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "BLACKTHORN
-OATH", 1.0)
+		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "", 0.0)
 	else:
 		var amount: float = _ease((t - 15.0) / 3.0)
-		camera.global_position = Vector3(0.0, 4.4, 7.2).lerp(Vector3(0.0, 4.6, 8.1), amount)
-		camera.look_at(Vector3(0.0, 1.15, -16.0), Vector3.UP)
-		camera.fov = lerpf(49.0, 46.0, amount)
-		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN
-OATH", 1.0)
+		camera.global_position = Vector3(1.8, 3.7, -9.2).lerp(Vector3(2.4, 4.0, -10.5), amount)
+		camera.look_at(Vector3(0.0, 1.15, -3.0), Vector3.UP)
+		camera.fov = lerpf(46.0, 48.0, amount)
+		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN\\nOATH", 1.0)
 		if t >= INTRO_LENGTH:
 			_finish_intro()
 
@@ -1158,17 +1155,17 @@ func _update_track() -> void:
 			segments.remove_at(i)
 
 func _follow_camera(delta: float) -> void:
-	var target_position: Vector3 = player.global_position + Vector3(0, 4.15, 8.1)
+	var target_position: Vector3 = player.global_position + Vector3(0, 3.15, 6.4)
 	camera.global_position = camera.global_position.lerp(target_position, minf(delta * 6.0, 1.0))
-	camera.look_at(player.global_position + Vector3(0, 1.1, -6.3), Vector3.UP)
-	camera.fov = lerpf(camera.fov, 59.0, delta * 1.2)
+	camera.look_at(player.global_position + Vector3(0, 1.0, -6.8), Vector3.UP)
+	camera.fov = lerpf(camera.fov, 55.0, delta * 1.2)
 
 func _idle_camera(delta: float) -> void:
 	if not is_instance_valid(camera) or not is_instance_valid(player):
 		return
 	var time: float = Time.get_ticks_msec() / 1000.0
 	var sway := Vector3(sin(time * 0.19) * 0.28, 0.04 * sin(time * 0.3), 0.0)
-	var target_position: Vector3 = player.global_position + Vector3(0, 4.3, 8.5) + sway
+	var target_position: Vector3 = player.global_position + Vector3(0, 3.35, 6.8) + sway
 	camera.global_position = camera.global_position.lerp(target_position, minf(delta * 1.7, 1.0))
 	camera.look_at(player.global_position + Vector3(0, 1.0, -8.0), Vector3.UP)
 
