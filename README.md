@@ -53,3 +53,9 @@ Open the repository in Godot 4.4.1 with matching export templates. GitHub Action
 ## Honest status
 
 Prototype 0.4.4 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
+
+
+## Free asset licenses
+- **Knight and cathedral models:** see the source notes in `scripts/download_assets.sh`; the included model providers' license terms are recorded there.
+- **RPG sound effects:** OpenGameArt, *RPG Sound Pack* by artisticdude, CC0: https://opengameart.org/content/rpg-sound-pack
+- **Animation source under evaluation:** Quaternius, *Universal Animation Library 2*, CC0: https://quaternius.com/packs/universalanimationlibrary2.html
