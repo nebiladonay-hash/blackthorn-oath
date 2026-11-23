@@ -165,7 +165,8 @@ func _build_character() -> void:
 				var animation_nodes := imported_model.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					imported_animation = animation_nodes[0] as AnimationPlayer
-					_copy_shared_combat_animations()
+					# KayKit Adventurers has its own native humanoid clips; do not
+					# apply the previous Mixamo combat tracks to this different rig.
 				# The rigged asset already carries its own weapon. Do not add a second
 				# unrigged blade at world scale; it detached from the hand in the review.
 				sword_pivot = null
