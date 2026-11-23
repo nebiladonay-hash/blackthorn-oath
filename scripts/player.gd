@@ -37,6 +37,7 @@ var sliding_height := 0.95
 func _ready() -> void:
 	add_to_group("player")
 	_build_character()
+	_add_character_lighting()
 	hit_shape = CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.4
@@ -101,6 +102,25 @@ func _physics_process(delta: float) -> void:
 
 	var visible_now := invulnerability <= 0.0 or int(Time.get_ticks_msec() / 85) % 2 == 0
 	visual_root.visible = visible_now
+
+func _add_character_lighting() -> void:
+	var front_fill := OmniLight3D.new()
+	front_fill.name = "KnightFrontFill"
+	front_fill.position = Vector3(0.0, 2.0, -2.4)
+	front_fill.light_color = Color(0.70, 0.79, 1.0)
+	front_fill.light_energy = 3.6
+	front_fill.omni_range = 8.5
+	front_fill.shadow_enabled = false
+	visual_root.add_child(front_fill)
+
+	var warm_rim := OmniLight3D.new()
+	warm_rim.name = "KnightWarmRim"
+	warm_rim.position = Vector3(1.4, 1.6, 1.0)
+	warm_rim.light_color = Color(1.0, 0.26, 0.12)
+	warm_rim.light_energy = 1.25
+	warm_rim.omni_range = 5.5
+	warm_rim.shadow_enabled = false
+	visual_root.add_child(warm_rim)
 
 func _build_character() -> void:
 	visual_root = Node3D.new()
