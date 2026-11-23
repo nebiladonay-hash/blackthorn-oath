@@ -101,6 +101,20 @@ func _capture_intro() -> void:
 			return
 		print("VISUAL_CAPTURE_OK ", filename, " ", image.get_width(), "x", image.get_height())
 
+	# Capture a real in-run frame after the intro/menu, not just cinematic stills.
+	scene._start_run()
+	for frame_index in range(24):
+		await process_frame
+		await RenderingServer.frame_post_draw
+	var gameplay_image: Image = get_root().get_texture().get_image()
+	var gameplay_path: String = output_absolute.path_join("05-gameplay-runner.png")
+	if gameplay_image.save_png(gameplay_path) != OK:
+		push_error("Failed to save gameplay runner screenshot")
+		scene.queue_free()
+		await process_frame
+		quit(4)
+		return
+	print("VISUAL_CAPTURE_OK 05-gameplay-runner.png ", gameplay_image.get_width(), "x", gameplay_image.get_height())
 	print("VISUAL_REVIEW_COMPLETE")
 	var soundtrack := scene.get_node_or_null("OriginalDarkFantasyScore") as AudioStreamPlayer
 	if soundtrack != null:
