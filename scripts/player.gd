@@ -127,8 +127,8 @@ func _add_character_lighting() -> void:
 	front_fill.name = "KnightFrontFill"
 	front_fill.position = Vector3(0.0, 2.0, -2.4)
 	front_fill.light_color = Color(0.70, 0.79, 1.0)
-	front_fill.light_energy = 3.6
-	front_fill.omni_range = 8.5
+	front_fill.light_energy = 7.2
+	front_fill.omni_range = 12.0
 	front_fill.shadow_enabled = false
 	visual_root.add_child(front_fill)
 
@@ -136,8 +136,8 @@ func _add_character_lighting() -> void:
 	warm_rim.name = "KnightWarmRim"
 	warm_rim.position = Vector3(1.4, 1.6, 1.0)
 	warm_rim.light_color = Color(1.0, 0.26, 0.12)
-	warm_rim.light_energy = 1.25
-	warm_rim.omni_range = 5.5
+	warm_rim.light_energy = 2.0
+	warm_rim.omni_range = 7.0
 	warm_rim.shadow_enabled = false
 	visual_root.add_child(warm_rim)
 
@@ -169,15 +169,18 @@ func _build_character() -> void:
 
 func face_for_cinematic() -> void:
 	if using_imported_model and imported_model != null:
-		imported_model.rotation.y = PI
+		# The reveal camera is ahead of the runner on -Z.
+		imported_model.rotation.y = 0.0
 
 func face_for_menu() -> void:
 	if using_imported_model and imported_model != null:
-		imported_model.rotation.y = 0.0
+		# The title camera sits behind the start line on +Z.
+		imported_model.rotation.y = PI
 
 func face_for_run() -> void:
 	if using_imported_model and imported_model != null:
-		imported_model.rotation.y = PI
+		# The runner travels down -Z; face the road, not the chase camera.
+		imported_model.rotation.y = 0.0
 
 func _fit_imported_model(model: Node3D, target_height: float) -> void:
 	var combined := AABB()
