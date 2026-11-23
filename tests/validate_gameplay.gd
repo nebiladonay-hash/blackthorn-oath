@@ -115,7 +115,7 @@ func _run_gameplay_checks() -> void:
 	enemy.attack_timer = 999.0
 	player.forward_speed = 0.0
 	var enemy_health_before := enemy.health
-	print("MELEE_TEST_BEFORE player=", player.global_position, " enemy=", enemy.global_position, " delta=", enemy.global_position - player.global_position, " groups=", get_tree().get_nodes_in_group("enemies").size(), " cd=", player.attack_cooldown)
+	print("MELEE_TEST_BEFORE player=", player.global_position, " enemy=", enemy.global_position, " delta=", enemy.global_position - player.global_position, " groups=", player.get_tree().get_nodes_in_group("enemies").size(), " cd=", player.attack_cooldown)
 	player.attack()
 	# Melee damage is intentionally delayed until the blade reaches its impact
 	# frame. Wait through that authored wind-up instead of checking on input.
