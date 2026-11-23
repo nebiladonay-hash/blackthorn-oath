@@ -60,29 +60,54 @@ download_asset "t1-sentinel.glb" \
   "https://pub-63ab27389d044634a73e89c1a0c6d4a6.r2.dev/free-library/3d-models/t1-sentinel/t1-sentinel.glb" \
   15000000
 
-# CC0, OpenGameArt RPG Sound Pack by artisticdude: sword swishes, hits,
-# creature vocalizations, footsteps and UI/gameplay sounds.
-SFX_DIR="audio/sfx"
+# Curated sound design: every file has a known purpose; no random category scraping.
+SFX_DIR="audio/sfx/curated"
 mkdir -p "$SFX_DIR"
-SFX_ARCHIVE="/tmp/blackthorn-rpg-sound-pack.zip"
-if [[ ! -f "$SFX_DIR/.cc0-rpg-pack-installed" ]]; then
-  echo "Downloading CC0 RPG sound effects ..."
-  curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-    "https://opengameart.org/sites/default/files/rpg_sound_pack.zip" \
-    -o "$SFX_ARCHIVE"
-  unzip -oq "$SFX_ARCHIVE" -d "$SFX_DIR"
-  touch "$SFX_DIR/.cc0-rpg-pack-installed"
-fi
-echo "Available CC0 sound files:"
-find "$SFX_DIR" -type f \( -iname '*.wav' -o -iname '*.ogg' -o -iname '*.mp3' \) -printf '%P\\n' | sort
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_000/footstep_concrete_000.ogg" \
+  -o "$SFX_DIR/stone_step_01.ogg"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://static.3dvalley.com/kn/impact-sounds.footstep_concrete_001/footstep_concrete_001.ogg" \
+  -o "$SFX_DIR/stone_step_02.ogg"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_000/impactMetal_heavy_000.ogg" \
+  -o "$SFX_DIR/steel_impact_01.ogg"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://static.3dvalley.com/kn/impact-sounds.impactMetal_heavy_001/impactMetal_heavy_001.ogg" \
+  -o "$SFX_DIR/steel_impact_02.ogg"
 
-# CC0, OpenGameArt "100 CC0 SFX #2" includes varied footsteps and impact sounds.
-EXTRA_SFX_ARCHIVE="/tmp/blackthorn-cc0-sfx-100.zip"
-if [[ ! -f "$SFX_DIR/.cc0-sfx-100-installed" ]]; then
-  echo "Downloading CC0 footsteps and supplementary effects ..."
-  curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
-    "https://opengameart.org/sites/default/files/sfx_100_v2.zip" \
-    -o "$EXTRA_SFX_ARCHIVE"
-  unzip -oq "$EXTRA_SFX_ARCHIVE" -d "$SFX_DIR"
-  touch "$SFX_DIR/.cc0-sfx-100-installed"
+SWISH_ARCHIVE="/tmp/blackthorn-swishes-cc0.zip"
+SWISH_DIR="/tmp/blackthorn-swishes"
+mkdir -p "$SWISH_DIR"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://opengameart.org/sites/default/files/swishes.zip" -o "$SWISH_ARCHIVE"
+unzip -oq "$SWISH_ARCHIVE" -d "$SWISH_DIR"
+mapfile -t SWISH_FILES < <(find "$SWISH_DIR" -type f -iname '*.wav' | sort)
+if [[ "${#SWISH_FILES[@]}" -lt 8 ]]; then
+  echo "Expected 8 or more CC0 weapon swishes, found ${#SWISH_FILES[@]}" >&2
+  exit 1
 fi
+for index in {0..7}; do
+  printf -v output_name "sword_swing_%02d.wav" "$((index + 1))"
+  cp "${SWISH_FILES[$index]}" "$SFX_DIR/$output_name"
+done
+
+# Cinzel display typeface, SIL Open Font License 1.1.
+FONT_DIR="assets/fonts"
+mkdir -p "$FONT_DIR"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/Cinzel%5Bwght%5D.ttf" \
+  -o "$FONT_DIR/Cinzel.ttf"
+curl --fail --location --retry 4 --retry-delay 2 --connect-timeout 30 \
+  "https://raw.githubusercontent.com/google/fonts/main/ofl/cinzel/OFL.txt" \
+  -o "$FONT_DIR/OFL-Cinzel.txt"
+
+# Godot 4.4 boot splash only supports PNG. Render our custom SVG splash to PNG.
+if ! command -v rsvg-convert >/dev/null 2>&1; then
+  sudo apt-get update
+  sudo apt-get install -y librsvg2-bin
+fi
+rsvg-convert --width 1600 --height 900 assets/ui/blackthorn_splash.svg -o assets/ui/blackthorn_splash.png
+
+echo "Curated audio files:"
+find "$SFX_DIR" -maxdepth 1 -type f -printf '%f\\n' | sort
