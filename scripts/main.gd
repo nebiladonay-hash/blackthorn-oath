@@ -709,12 +709,12 @@ func _build_interface() -> void:
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(eyebrow)
 
-	var title := _label("BLACKTHORN\\nOATH", 50, Color(0.96, 0.90, 0.81))
+	var title := _label("BLACKTHORN\nOATH", 50, Color(0.96, 0.90, 0.81))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("line_spacing", -8)
 	menu_box.add_child(title)
 
-	var description := _label("The bells have fallen silent.\\nSomething beneath the cathedral has begun to wake.", 16, Color(0.82, 0.76, 0.72))
+	var description := _label("The bells have fallen silent.\nSomething beneath the cathedral has begun to wake.", 16, Color(0.82, 0.76, 0.72))
 	description.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	menu_box.add_child(description)
 
@@ -794,7 +794,7 @@ func _update_cinematic(delta: float) -> void:
 		camera.global_position = Vector3(1.8, 3.7, -9.2).lerp(Vector3(2.4, 4.0, -10.5), amount)
 		camera.look_at(Vector3(0.0, 1.15, -3.0), Vector3.UP)
 		camera.fov = lerpf(46.0, 48.0, amount)
-		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN\\nOATH", 1.0)
+		_set_cinematic_copy("THE OATH DOES NOT END WITH DEATH.", "BLACKTHORN\nOATH", 1.0)
 		if t >= INTRO_LENGTH:
 			_finish_intro()
 
