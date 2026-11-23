@@ -214,7 +214,8 @@ func _build_environment() -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.52, 0.50, 0.58)
-	environment.ambient_light_energy = 1.15
+	environment.ambient_light_energy = 1.38
+	environment.tonemap_exposure = 1.12
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.42
@@ -232,7 +233,7 @@ func _build_environment() -> void:
 	var moonlight := DirectionalLight3D.new()
 	moonlight.rotation_degrees = Vector3(-35, -28, 0)
 	moonlight.light_color = Color(0.76, 0.79, 0.92)
-	moonlight.light_energy = 1.45
+	moonlight.light_energy = 1.8
 	moonlight.shadow_enabled = true
 	moonlight.directional_shadow_max_distance = 95.0
 	moonlight.shadow_bias = 0.035
