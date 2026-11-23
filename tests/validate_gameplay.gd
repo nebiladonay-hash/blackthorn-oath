@@ -56,7 +56,9 @@ func _run_gameplay_checks() -> void:
 
 	var enemy_health_before := enemy.health
 	player.attack()
-	await physics_frame
+	# The damage is intentionally delayed until the sword's impact frame.
+	for frame_index in range(15):
+		await physics_frame
 	if enemy.health != enemy_health_before - 1:
 		push_error("GAMEPLAY_TEST: sword attack did not damage enemy")
 		scene.queue_free()
@@ -76,6 +78,8 @@ func _run_gameplay_checks() -> void:
 
 	player.attack_cooldown = 0.0
 	player.attack()
+	for frame_index in range(15):
+		await physics_frame
 	if not enemy.is_dead or enemy.imported_animation.current_animation != "death":
 		push_error("GAMEPLAY_TEST: enemy death animation did not start")
 		scene.queue_free()
