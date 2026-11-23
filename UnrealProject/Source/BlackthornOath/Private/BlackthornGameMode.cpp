@@ -39,7 +39,7 @@ void ABlackthornGameMode::Tick(float DeltaSeconds)
 
     PlayerCharacter->ForwardSpeed = CurrentSpeed;
     Distance = FMath::Max(0.0f,
-        FVector::Dist2D(RunStartLocation, PlayerCharacter->GetActorLocation()) / 100.0f);
+        FMath::Abs(PlayerCharacter->GetActorLocation().X - RunStartLocation.X) / 100.0f);
 
     OnRunUpdated.Broadcast();
 }
