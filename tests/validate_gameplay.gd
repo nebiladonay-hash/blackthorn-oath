@@ -42,13 +42,13 @@ func _run_gameplay_checks() -> void:
 		scene.queue_free()
 		quit(7)
 		return
-	if player.imported_animation == null or not player.imported_animation.has_animation("combat/sword_attack"):
-		push_error("GAMEPLAY_TEST: imported sword attack animation is missing")
+	if player.imported_animation == null or player._resolve_imported_animation("attack") == StringName():
+		push_error("GAMEPLAY_TEST: KayKit native attack animation is missing")
 		scene.queue_free()
 		quit(3)
 		return
-	if not str(player.imported_animation.current_animation).contains("sprint"):
-		push_error("GAMEPLAY_TEST: player is not playing the sprint clip while running: %s" % player.imported_animation.current_animation)
+	if not str(player.imported_animation.current_animation).to_lower().contains("run"):
+		push_error("GAMEPLAY_TEST: player is not playing a KayKit running clip: %s" % player.imported_animation.current_animation)
 		scene.queue_free()
 		quit(4)
 		return
@@ -64,8 +64,8 @@ func _run_gameplay_checks() -> void:
 		scene.queue_free()
 		quit(5)
 		return
-	if not str(player.imported_animation.current_animation).contains("sword_attack"):
-		push_error("GAMEPLAY_TEST: player sword attack animation did not start")
+	if not str(player.imported_animation.current_animation).to_lower().contains("attack"):
+		push_error("GAMEPLAY_TEST: KayKit sword attack animation did not start: %s" % player.imported_animation.current_animation)
 		scene.queue_free()
 		quit(8)
 		return
