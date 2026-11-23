@@ -2,6 +2,7 @@ extends Node3D
 
 const PlayerScript = preload("res://scripts/player.gd")
 const EnemyScript = preload("res://scripts/enemy.gd")
+const BossScript = preload("res://scripts/boss.gd")
 const HazardScript = preload("res://scripts/hazard.gd")
 const RelicScript = preload("res://scripts/relic.gd")
 const SCORE_PATH := "res://audio/blackthorn_cinematic_ambience.wav"
@@ -1296,7 +1297,20 @@ func _spawn_segment(segment_z: float) -> void:
 	_add_segment_props(segment, segment_serial)
 
 	# Give the player a short safe runway before introducing the first enemy pattern.
-	if segment_serial < 2:
+	if segment_serial >= 8 and segment_serial % 8 == 0:
+		# A dedicated arena interrupts the normal obstacle rhythm every eight segments.
+		# The Warden occupies the centre lane; side-lane relics reward committed dodges.
+		var warden := BossScript.new()
+		warden.position = Vector3(0.0, 0.0, -18.0)
+		segment.add_child(warden)
+		for relic_index in range(4):
+			var relic := RelicScript.new()
+			var lane: int = -1 if relic_index % 2 == 0 else 1
+			relic.position = Vector3(float(lane) * LANE_WIDTH, 1.35, -7.0 - float(relic_index) * 6.0)
+			segment.add_child(relic)
+		_add_brazier(segment, -4.6, 1.5, -18.0)
+		_add_brazier(segment, 4.6, 1.5, -18.0)
+	elif segment_serial < 2:
 		for relic_index in range(5):
 			var relic := RelicScript.new()
 			var lane: int = relic_index % 3
@@ -1571,6 +1585,13 @@ func add_kill() -> void:
 	_save_progress()
 	_update_hud()
 	_update_contracts_ui()
+
+func add_boss_reward() -> void:
+	# Boss reward is separate from the ordinary kill payout.
+	coin_wallet += 50
+	relic_bank += 3
+	_save_progress()
+	_update_hud()
 
 func add_relic() -> void:
 	relics += 1
