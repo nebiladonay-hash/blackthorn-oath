@@ -78,6 +78,7 @@ func _ready() -> void:
 	_make_material_library()
 	_build_environment()
 	_build_cathedral_landmark()
+	_build_kaykit_dungeon_dressing()
 	_build_distant_silhouette()
 	_build_player_and_camera()
 	_build_interface()
@@ -1527,3 +1528,35 @@ func _capsule(parent: Node3D, pos: Vector3, radius: float, height: float, materi
 func _ease(value: float) -> float:
 	var x: float = clampf(value, 0.0, 1.0)
 	return x * x * (3.0 - 2.0 * x)
+
+
+# KayKit Dungeon Remastered CC0 environment dressing.
+# Kept as static imported GLBs so the existing lane/gameplay geometry is untouched.
+func _build_kaykit_dungeon_dressing() -> void:
+	var placements: Array[Dictionary] = [
+		{"asset": "torch_mounted.gltf.glb", "position": Vector3(-4.35, 2.0, -5.5), "rotation": 0.0, "scale": 1.0},
+		{"asset": "torch_mounted.gltf.glb", "position": Vector3(4.35, 2.0, -5.5), "rotation": PI, "scale": 1.0},
+		{"asset": "pillar_decorated.gltf.glb", "position": Vector3(-5.0, 0.0, -13.0), "rotation": 0.0, "scale": 1.25},
+		{"asset": "pillar_decorated.gltf.glb", "position": Vector3(5.0, 0.0, -13.0), "rotation": 0.0, "scale": 1.25},
+		{"asset": "barrel_large_decorated.gltf.glb", "position": Vector3(-4.6, 0.0, -19.0), "rotation": 0.35, "scale": 1.0},
+		{"asset": "chest_gold.glb", "position": Vector3(4.65, 0.0, -26.0), "rotation": -0.25, "scale": 0.85},
+		{"asset": "torch_lit.gltf.glb", "position": Vector3(-4.4, 0.0, -31.0), "rotation": 0.0, "scale": 1.0},
+		{"asset": "torch_lit.gltf.glb", "position": Vector3(4.4, 0.0, -31.0), "rotation": 0.0, "scale": 1.0}
+	]
+	var root := Node3D.new()
+	root.name = "KayKitDungeonProps"
+	add_child(root)
+	for entry in placements:
+		var path := "res://assets/kaykit_dungeon/" + String(entry["asset"])
+		if not ResourceLoader.exists(path):
+			continue
+		var packed := load(path) as PackedScene
+		if packed == null:
+			continue
+		var prop := packed.instantiate() as Node3D
+		if prop == null:
+			continue
+		prop.position = entry["position"]
+		prop.rotation.y = float(entry["rotation"])
+		prop.scale = Vector3.ONE * float(entry["scale"])
+		root.add_child(prop)
