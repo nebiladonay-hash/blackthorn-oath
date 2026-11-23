@@ -24,6 +24,10 @@ var distance: float = 0.0
 var kills: int = 0
 var relics: int = 0
 var relic_bank: int = 0
+var coin_wallet: int = 0
+var blade_level: int = 0
+var vitality_level: int = 0
+var fortune_level: int = 0
 var best_distance: int = 0
 var save_data := ConfigFile.new()
 
@@ -51,6 +55,9 @@ var modal_title: Label
 var modal_body: Label
 var modal_action: Button
 var pause_button: Button
+var coin_label: Label
+var shop_panel: PanelContainer
+var shop_status_label: Label
 var subtitle_label: Label
 var intro_title_label: Label
 var intro_kicker_label: Label
@@ -255,6 +262,7 @@ func _build_player_and_camera() -> void:
 	add_child(player)
 	player.health_changed.connect(_on_health_changed)
 	player.died.connect(_on_player_died)
+	_apply_player_upgrades()
 
 	camera = Camera3D.new()
 	camera.name = "CinematicCamera"
@@ -836,6 +844,8 @@ func _build_interface() -> void:
 	stats.add_child(health_label)
 	relic_label = _label("RELICS   000    /    RESERVE  000", 14, Color(0.9, 0.62, 0.25))
 	stats.add_child(relic_label)
+	coin_label = _label("COINS   00000", 14, Color(0.96, 0.75, 0.32))
+	stats.add_child(coin_label)
 	best_label = _label("BEST RUN   00000 m", 13, Color(0.65, 0.63, 0.68))
 	stats.add_child(best_label)
 
@@ -907,6 +917,8 @@ func _build_interface() -> void:
 
 	var start := _button(menu_box, "ENTER THE RUINS", Vector2.ZERO, Vector2(0, 56), _start_run, Control.PRESET_TOP_LEFT, 18)
 	start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var shop_entry := _button(menu_box, "THE ARMOURY  /  SHOP", Vector2.ZERO, Vector2(0, 44), _open_shop, Control.PRESET_TOP_LEFT, 15)
+	shop_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 12, Color(0.73, 0.68, 0.68))
 	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -934,6 +946,32 @@ func _build_interface() -> void:
 	modal_box.add_child(modal_body)
 	modal_action = _button(modal_box, "RESUME", Vector2.ZERO, Vector2(0, 58), _on_modal_action_pressed, Control.PRESET_TOP_LEFT, 18)
 	modal_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var pause_shop := _button(modal_box, "OPEN ARMOURY", Vector2.ZERO, Vector2(0, 46), _open_shop, Control.PRESET_TOP_LEFT, 15)
+	pause_shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	shop_panel = _make_overlay_panel(root_ui, Vector2(500, 430))
+	shop_panel.name = "ArmouryShop"
+	shop_panel.set_anchors_preset(Control.PRESET_CENTER)
+	shop_panel.position = Vector2(-250, -215)
+	shop_panel.hide()
+	var shop_box := VBoxContainer.new()
+	shop_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	shop_box.add_theme_constant_override("separation", 12)
+	shop_panel.add_child(shop_box)
+	var shop_title := _label("THE ASHEN ARMOURY", 30, Color(0.96, 0.88, 0.76))
+	shop_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_box.add_child(shop_title)
+	shop_status_label = _label("", 15, Color(0.94, 0.73, 0.35))
+	shop_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shop_box.add_child(shop_status_label)
+	var blade_buy := _button(shop_box, "TEMPERED EDGE  ·  80 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("blade"), Control.PRESET_TOP_LEFT, 15)
+	blade_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var vitality_buy := _button(shop_box, "VITALITY RUNE  ·  100 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("vitality"), Control.PRESET_TOP_LEFT, 15)
+	vitality_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var fortune_buy := _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 15)
+	fortune_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var shop_close := _button(shop_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_shop, Control.PRESET_TOP_LEFT, 14)
+	shop_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.008, 0.006, 0.012, 1.0)
@@ -1031,6 +1069,8 @@ func _start_run() -> void:
 	game_over = false
 	paused = false
 	player.lane = 1
+	player.health = player.max_health
+	player.dead = false
 	player.global_position.x = 0.0
 	player.face_for_run()
 	menu_panel.hide()
@@ -1399,6 +1439,7 @@ func _update_hud() -> void:
 	score_label.text = "DISTANCE   %05d m      KILLS  %02d" % [int(distance), kills]
 	health_label.text = "VITALITY   " + "♥  ".repeat(player.health) + "♡  ".repeat(3 - player.health)
 	relic_label.text = "RELICS   %03d    /    RESERVE  %03d" % [relics, relic_bank]
+	coin_label.text = "COINS   %05d" % coin_wallet
 	best_label.text = "BEST RUN   %05d m" % best_distance
 
 func _on_health_changed(value: int) -> void:
@@ -1422,6 +1463,9 @@ func _show_game_over() -> void:
 
 func add_kill() -> void:
 	kills += 1
+	coin_wallet += 5 + fortune_level
+	_save_progress()
+	_update_hud()
 
 func add_relic() -> void:
 	relics += 1
@@ -1433,10 +1477,18 @@ func _load_progress() -> void:
 	if save_data.load("user://blackthorn_oath.cfg") == OK:
 		best_distance = int(save_data.get_value("progress", "best_distance", 0))
 		relic_bank = int(save_data.get_value("progress", "relic_bank", 0))
+		coin_wallet = int(save_data.get_value("progress", "coin_wallet", 0))
+		blade_level = int(save_data.get_value("upgrades", "blade", 0))
+		vitality_level = int(save_data.get_value("upgrades", "vitality", 0))
+		fortune_level = int(save_data.get_value("upgrades", "fortune", 0))
 
 func _save_progress() -> void:
 	save_data.set_value("progress", "best_distance", best_distance)
 	save_data.set_value("progress", "relic_bank", relic_bank)
+	save_data.set_value("progress", "coin_wallet", coin_wallet)
+	save_data.set_value("upgrades", "blade", blade_level)
+	save_data.set_value("upgrades", "vitality", vitality_level)
+	save_data.set_value("upgrades", "fortune", fortune_level)
 	save_data.save("user://blackthorn_oath.cfg")
 
 func _apply_asset_tint(root: Node3D, tint: Color) -> void:
@@ -1560,3 +1612,50 @@ func _build_kaykit_dungeon_dressing() -> void:
 		prop.rotation.y = float(entry["rotation"])
 		prop.scale = Vector3.ONE * float(entry["scale"])
 		root.add_child(prop)
+
+
+func _apply_player_upgrades() -> void:
+	if not is_instance_valid(player):
+		return
+	player.attack_power = 1 + blade_level
+	player.max_health = 3 + vitality_level
+	player.health = player.max_health
+
+func _open_shop() -> void:
+	if game_started and not game_over:
+		paused = true
+		get_tree().paused = true
+	shop_status_label.text = "PURSE  %d COINS     ·     EDGE %d     ·     VITALITY %d" % [coin_wallet, blade_level, vitality_level]
+	shop_panel.show()
+	if is_instance_valid(modal_panel):
+		modal_panel.hide()
+
+func _close_shop() -> void:
+	shop_panel.hide()
+	if game_started and not game_over:
+		_resume_run()
+
+func _buy_upgrade(kind: String) -> void:
+	var cost := 0
+	match kind:
+		"blade":
+			cost = 80 + blade_level * 65
+		"vitality":
+			cost = 100 + vitality_level * 80
+		"fortune":
+			cost = 120 + fortune_level * 90
+	if coin_wallet < cost:
+		shop_status_label.text = "NOT ENOUGH COINS  ·  NEED %d" % cost
+		return
+	coin_wallet -= cost
+	match kind:
+		"blade":
+			blade_level += 1
+		"vitality":
+			vitality_level += 1
+		"fortune":
+			fortune_level += 1
+	_apply_player_upgrades()
+	_save_progress()
+	shop_status_label.text = "PURCHASED  ·  %d COINS REMAIN" % coin_wallet
+	_update_hud()
