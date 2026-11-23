@@ -3,6 +3,7 @@ class_name BlackthornOathBoss
 
 var boss_health_label: Label3D
 var reward_paid := false
+var phase_two := false
 
 func _ready() -> void:
 	super._ready()
@@ -24,8 +25,15 @@ func take_damage(amount: int = 1) -> void:
 	if is_dead:
 		return
 	super.take_damage(amount)
+	if health <= 6 and not is_dead and not phase_two:
+		phase_two = true
+		attack_interval = 1.0
+		damage = 2
+		if is_instance_valid(boss_health_label):
+			boss_health_label.modulate = Color(1.0, 0.35, 0.24)
 	if is_instance_valid(boss_health_label):
-		boss_health_label.text = "THE ASHEN WARDEN   %d / 12" % maxi(0, health)
+		var title := "THE ASHEN WARDEN · ENRAGED" if phase_two else "THE ASHEN WARDEN"
+		boss_health_label.text = "%s   %d / 12" % [title, maxi(0, health)]
 	if is_dead and not reward_paid:
 		reward_paid = true
 		var scene := get_tree().current_scene
