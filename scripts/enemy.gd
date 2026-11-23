@@ -72,6 +72,9 @@ func _process(delta: float) -> void:
 func take_damage(amount: int = 1) -> void:
 	if is_dead:
 		return
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("play_sfx"):
+		scene.call("play_sfx", "impact", global_position)
 	health -= amount
 	hit_flash = 0.13
 	_set_flash(true)
