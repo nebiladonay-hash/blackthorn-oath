@@ -30,6 +30,9 @@ var vitality_level: int = 0
 var fortune_level: int = 0
 var healing_flasks: int = 0
 var flask_label: Label
+var settings_panel: PanelContainer
+var music_volume: float = 0.42
+var effects_volume: float = 0.8
 var best_distance: int = 0
 var save_data := ConfigFile.new()
 
@@ -767,7 +770,7 @@ func play_sfx(kind: String, world_position: Vector3 = Vector3.ZERO) -> void:
 		return
 	var source := AudioStreamPlayer3D.new()
 	source.stream = stream
-	source.volume_db = -5.0 if kind == "impact" else -8.0
+	source.volume_db = (-5.0 if kind == "impact" else -8.0) + linear_to_db(maxf(effects_volume, 0.001))
 	source.unit_size = 8.0
 	source.max_distance = 36.0
 	source.position = world_position
@@ -785,7 +788,7 @@ func _start_soundtrack() -> void:
 	soundtrack = AudioStreamPlayer.new()
 	soundtrack.name = "OriginalDarkFantasyScore"
 	soundtrack.stream = audio_stream
-	soundtrack.volume_db = -13.5
+	soundtrack.volume_db = linear_to_db(maxf(music_volume, 0.001)) - 2.0
 	soundtrack.bus = "Master"
 	add_child(soundtrack)
 	soundtrack.play()
@@ -948,6 +951,8 @@ func _build_interface() -> void:
 	shop_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var contracts_entry := _button(menu_box, "DAILY CONTRACTS", Vector2.ZERO, Vector2(0, 42), _open_contracts, Control.PRESET_TOP_LEFT, 14)
 	contracts_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var settings_entry := _button(menu_box, "SETTINGS", Vector2.ZERO, Vector2(0, 38), _open_settings, Control.PRESET_TOP_LEFT, 13)
+	settings_entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	var controls_hint := _label("SWIPE  MOVE / JUMP / SLIDE     •     TAP  STRIKE", 12, Color(0.73, 0.68, 0.68))
 	controls_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1027,6 +1032,39 @@ func _build_interface() -> void:
 	contract_distance.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var contracts_close := _button(contracts_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_contracts, Control.PRESET_TOP_LEFT, 14)
 	contracts_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	settings_panel = _make_overlay_panel(root_ui, Vector2(460, 300))
+	settings_panel.name = "Settings"
+	settings_panel.hide()
+	var settings_box := VBoxContainer.new()
+	settings_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	settings_box.add_theme_constant_override("separation", 14)
+	settings_panel.add_child(settings_box)
+	var settings_title := _label("GAME SETTINGS", 28, Color(0.96, 0.88, 0.76))
+	settings_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	settings_box.add_child(settings_title)
+	var music_caption := _label("MUSIC VOLUME", 13, Color(0.84, 0.76, 0.68))
+	settings_box.add_child(music_caption)
+	var music_slider := HSlider.new()
+	music_slider.min_value = 0.0
+	music_slider.max_value = 1.0
+	music_slider.step = 0.01
+	music_slider.value = music_volume
+	music_slider.custom_minimum_size = Vector2(0, 28)
+	music_slider.value_changed.connect(_set_music_volume)
+	settings_box.add_child(music_slider)
+	var effects_caption := _label("SOUND EFFECTS", 13, Color(0.84, 0.76, 0.68))
+	settings_box.add_child(effects_caption)
+	var effects_slider := HSlider.new()
+	effects_slider.min_value = 0.0
+	effects_slider.max_value = 1.0
+	effects_slider.step = 0.01
+	effects_slider.value = effects_volume
+	effects_slider.custom_minimum_size = Vector2(0, 28)
+	effects_slider.value_changed.connect(_set_effects_volume)
+	settings_box.add_child(effects_slider)
+	var settings_close := _button(settings_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_settings, Control.PRESET_TOP_LEFT, 14)
+	settings_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	fade_overlay = ColorRect.new()
 	fade_overlay.color = Color(0.008, 0.006, 0.012, 1.0)
@@ -1540,6 +1578,26 @@ func add_relic() -> void:
 	_update_hud()
 	_update_contracts_ui()
 
+func _open_settings() -> void:
+	settings_panel.show()
+	if is_instance_valid(menu_panel):
+		menu_panel.hide()
+
+func _close_settings() -> void:
+	settings_panel.hide()
+	if not game_started:
+		menu_panel.show()
+
+func _set_music_volume(value: float) -> void:
+	music_volume = clampf(value, 0.0, 1.0)
+	if is_instance_valid(soundtrack):
+		soundtrack.volume_db = linear_to_db(maxf(music_volume, 0.001)) - 2.0
+	_save_progress()
+
+func _set_effects_volume(value: float) -> void:
+	effects_volume = clampf(value, 0.0, 1.0)
+	_save_progress()
+
 func _load_progress() -> void:
 	if save_data.load("user://blackthorn_oath.cfg") == OK:
 		best_distance = int(save_data.get_value("progress", "best_distance", 0))
@@ -1549,6 +1607,8 @@ func _load_progress() -> void:
 		vitality_level = int(save_data.get_value("upgrades", "vitality", 0))
 		fortune_level = int(save_data.get_value("upgrades", "fortune", 0))
 		healing_flasks = int(save_data.get_value("inventory", "healing_flasks", 0))
+		music_volume = float(save_data.get_value("settings", "music_volume", 0.42))
+		effects_volume = float(save_data.get_value("settings", "effects_volume", 0.8))
 		lifetime_kills = int(save_data.get_value("lifetime", "kills", 0))
 		lifetime_relics = int(save_data.get_value("lifetime", "relics", 0))
 		lifetime_runs = int(save_data.get_value("lifetime", "runs", 0))
@@ -1570,6 +1630,8 @@ func _save_progress() -> void:
 	save_data.set_value("upgrades", "vitality", vitality_level)
 	save_data.set_value("upgrades", "fortune", fortune_level)
 	save_data.set_value("inventory", "healing_flasks", healing_flasks)
+	save_data.set_value("settings", "music_volume", music_volume)
+	save_data.set_value("settings", "effects_volume", effects_volume)
 	save_data.set_value("lifetime", "kills", lifetime_kills)
 	save_data.set_value("lifetime", "relics", lifetime_relics)
 	save_data.set_value("lifetime", "runs", lifetime_runs)
