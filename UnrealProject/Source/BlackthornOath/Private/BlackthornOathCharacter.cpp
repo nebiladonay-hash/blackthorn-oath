@@ -85,10 +85,8 @@ void ABlackthornOathCharacter::MoveLane(int32 Direction)
         return;
     }
 
-    CurrentLane = FMath::Clamp(CurrentLane + FMath::Sign(Direction), 0, 2);
-    const float CenterY = GetActorLocation().Y -
-        (static_cast<float>(CurrentLane - 1) * LaneSpacing);
-    TargetLaneY = CenterY;
+    CurrentLane = FMath::Clamp(CurrentLane + (Direction > 0 ? 1 : -1), 0, 2);
+    TargetLaneY = static_cast<float>(CurrentLane - 1) * LaneSpacing;
 }
 
 void ABlackthornOathCharacter::UpdateLanePosition()
