@@ -453,9 +453,7 @@ func _set_sliding(enabled: bool) -> void:
 
 func attack() -> void:
 	if attack_cooldown > 0.0 or slide_timer > 0.0 or dead:
-		print("MELEE_IGNORED cooldown=", attack_cooldown, " slide=", slide_timer, " dead=", dead)
 		return
-	print("MELEE_STARTED player=", global_position, " enemies=", get_tree().get_nodes_in_group("enemies").size())
 	attack_cooldown = 0.58
 	attack_animation = 0.62 if using_imported_model else 0.32
 	# Separate the weapon wind-up from the damage frame. The hit lands after
@@ -465,17 +463,25 @@ func attack() -> void:
 	_play_game_sfx("sword")
 
 func _resolve_attack_hits() -> void:
-	var enemy_nodes := get_tree().get_nodes_in_group("enemies")
-	print("MELEE_IMPACT player=", global_position, " enemy_count=", enemy_nodes.size())
-	for enemy in enemy_nodes:
-		if not is_instance_valid(enemy) or not enemy.has_method("take_damage"):
+	# One sword swing selects the nearest valid enemy in the forward arc.
+	# This avoids a single slash damaging every foe stacked behind the target.
+	var nearest_enemy: Node3D = null
+	var nearest_distance := INF
+	for candidate in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(candidate) or not candidate.has_method("take_damage"):
 			continue
-		var d: Vector3 = enemy.global_position - global_position
-		# Three-lane combat: same lane only, and only in the forward sword arc.
-		print("MELEE_TARGET ", enemy.name, " delta=", d, " health=", enemy.get("health"))
-		if absf(d.x) < 1.5 and d.z > -3.8 and d.z < 1.2:
-			print("MELEE_HIT ", enemy.name)
-			enemy.take_damage(attack_power)
+		if candidate.get("is_dead") == true:
+			continue
+		var offset: Vector3 = candidate.global_position - global_position
+		# Forward is -Z. Targets must be close to the same lane and inside reach.
+		if absf(offset.x) > 1.05 or offset.z < -3.8 or offset.z > 1.15:
+			continue
+		var distance := Vector2(offset.x, offset.z).length_squared()
+		if distance < nearest_distance:
+			nearest_distance = distance
+			nearest_enemy = candidate
+	if nearest_enemy != null:
+		nearest_enemy.take_damage(attack_power)
 
 func _play_game_sfx(kind: String) -> void:
 	var scene := get_tree().current_scene
