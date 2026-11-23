@@ -28,6 +28,8 @@ var coin_wallet: int = 0
 var blade_level: int = 0
 var vitality_level: int = 0
 var fortune_level: int = 0
+var healing_flasks: int = 0
+var flask_label: Label
 var best_distance: int = 0
 var save_data := ConfigFile.new()
 
@@ -877,6 +879,13 @@ func _build_interface() -> void:
 	_button(controls, "JUMP", Vector2(-190, -101), Vector2(86, 72), func(): player.jump(), Control.PRESET_BOTTOM_RIGHT, 16)
 	_button(controls, "STRIKE", Vector2(-95, -101), Vector2(86, 72), func(): player.attack(), Control.PRESET_BOTTOM_RIGHT, 14)
 	pause_button = _button(controls, "Ⅱ", Vector2(-88, 61), Vector2(64, 54), _toggle_pause, Control.PRESET_TOP_RIGHT, 20)
+	flask_label = _label("FLASKS  0", 13, Color(0.95, 0.78, 0.48))
+	flask_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	flask_label.position = Vector2(-210, 72)
+	flask_label.size = Vector2(112, 30)
+	flask_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	controls.add_child(flask_label)
+	var use_flask_button := _button(controls, "DRINK", Vector2(-210, 108), Vector2(88, 48), _use_healing_flask, Control.PRESET_TOP_RIGHT, 13)
 
 	tutorial_label = _label("SWIPE TO MOVE     ↑ JUMP     ↓ SLIDE     TAP STRIKE", 15, Color(0.95, 0.84, 0.69))
 	tutorial_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
@@ -990,6 +999,8 @@ func _build_interface() -> void:
 	vitality_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var fortune_buy := _button(shop_box, "GILDED OATH  ·  120 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("fortune"), Control.PRESET_TOP_LEFT, 15)
 	fortune_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var flask_buy := _button(shop_box, "HEALING FLASK  ·  45 COINS", Vector2.ZERO, Vector2(0, 52), func(): _buy_upgrade("flask"), Control.PRESET_TOP_LEFT, 15)
+	flask_buy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var shop_close := _button(shop_box, "CLOSE", Vector2.ZERO, Vector2(0, 44), _close_shop, Control.PRESET_TOP_LEFT, 14)
 	shop_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
@@ -1486,6 +1497,8 @@ func _update_hud() -> void:
 	relic_label.text = "RELICS   %03d    /    RESERVE  %03d" % [relics, relic_bank]
 	coin_label.text = "COINS   %05d" % coin_wallet
 	best_label.text = "BEST RUN   %05d m" % best_distance
+	if is_instance_valid(flask_label):
+		flask_label.text = "FLASKS  %d" % healing_flasks
 
 func _on_health_changed(value: int) -> void:
 	_update_hud()
@@ -1535,6 +1548,7 @@ func _load_progress() -> void:
 		blade_level = int(save_data.get_value("upgrades", "blade", 0))
 		vitality_level = int(save_data.get_value("upgrades", "vitality", 0))
 		fortune_level = int(save_data.get_value("upgrades", "fortune", 0))
+		healing_flasks = int(save_data.get_value("inventory", "healing_flasks", 0))
 		lifetime_kills = int(save_data.get_value("lifetime", "kills", 0))
 		lifetime_relics = int(save_data.get_value("lifetime", "relics", 0))
 		lifetime_runs = int(save_data.get_value("lifetime", "runs", 0))
@@ -1555,6 +1569,7 @@ func _save_progress() -> void:
 	save_data.set_value("upgrades", "blade", blade_level)
 	save_data.set_value("upgrades", "vitality", vitality_level)
 	save_data.set_value("upgrades", "fortune", fortune_level)
+	save_data.set_value("inventory", "healing_flasks", healing_flasks)
 	save_data.set_value("lifetime", "kills", lifetime_kills)
 	save_data.set_value("lifetime", "relics", lifetime_relics)
 	save_data.set_value("lifetime", "runs", lifetime_runs)
@@ -1758,6 +1773,17 @@ func _close_shop() -> void:
 	if game_started and not game_over:
 		_resume_run()
 
+func _use_healing_flask() -> void:
+	if not game_started or game_over or paused:
+		return
+	if healing_flasks <= 0 or player.health >= player.max_health:
+		return
+	healing_flasks -= 1
+	player.health = mini(player.max_health, player.health + 1)
+	player.health_changed.emit(player.health)
+	_save_progress()
+	_update_hud()
+
 func _buy_upgrade(kind: String) -> void:
 	var cost := 0
 	match kind:
@@ -1767,6 +1793,11 @@ func _buy_upgrade(kind: String) -> void:
 			cost = 100 + vitality_level * 80
 		"fortune":
 			cost = 120 + fortune_level * 90
+		"flask":
+			cost = 45
+	if kind == "flask" and healing_flasks >= 5:
+		shop_status_label.text = "FLASK SATCHEL FULL  ·  MAXIMUM 5"
+		return
 	if coin_wallet < cost:
 		shop_status_label.text = "NOT ENOUGH COINS  ·  NEED %d" % cost
 		return
@@ -1778,6 +1809,8 @@ func _buy_upgrade(kind: String) -> void:
 			vitality_level += 1
 		"fortune":
 			fortune_level += 1
+		"flask":
+			healing_flasks += 1
 	_apply_player_upgrades()
 	_save_progress()
 	shop_status_label.text = "PURCHASED  ·  %d COINS REMAIN" % coin_wallet
