@@ -36,6 +36,10 @@ var sliding_height := 0.95
 
 func _ready() -> void:
 	add_to_group("player")
+	collision_layer = 1
+	collision_mask = 3 # world geometry + enemy bodies
+	floor_snap_length = 0.18
+	safe_margin = 0.035
 	_build_character()
 	_add_character_lighting()
 	hit_shape = CollisionShape3D.new()
@@ -66,7 +70,13 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("attack"):
 		attack()
 
-	global_position.x = move_toward(global_position.x, float(lane - 1) * lane_width, 14.0 * delta)
+	# Lane changes must go through the physics solver. Directly assigning X lets
+	# the knight tunnel through walls and enemies even while Z uses move_and_slide.
+	var target_x := float(lane - 1) * lane_width
+	var lane_error := target_x - global_position.x
+	velocity.x = clampf(lane_error * 13.0, -12.0, 12.0)
+	if absf(lane_error) < 0.025:
+		velocity.x = 0.0
 	velocity.z = -forward_speed
 	if not is_on_floor():
 		velocity.y -= 25.0 * delta
@@ -195,31 +205,62 @@ func _build_imported_sword() -> void:
 	_box(sword_pivot, Vector3(0, 0.65, 0), Vector3(0.12, 0.88, 0.04), steel)
 	_sphere(sword_pivot, Vector3(0, 1.12, 0), Vector3(0.06, 0.12, 0.04), steel)
 
+func _resolve_imported_animation(preferred: String) -> StringName:
+	if imported_animation == null:
+		return &""
+	var candidates: Array[String] = []
+	match preferred:
+		"sprint_loop":
+			candidates = ["run", "sprint", "jog", "walk"]
+		"attack":
+			candidates = ["attack", "slash", "sword", "melee", "combo"]
+		"jump":
+			candidates = ["jump", "leap", "fall"]
+		_:
+			candidates = ["idle", "stand", "breath"]
+	var names := imported_animation.get_animation_list()
+	for keyword in candidates:
+		for animation_name in names:
+			var normalized := String(animation_name).to_lower().replace("_", "").replace("-", "").replace(" ", "")
+			if normalized.contains(keyword.replace("_", "")):
+				return animation_name
+	return &""
+
 func _play_imported_animation(preferred: String) -> void:
 	if imported_animation == null:
 		return
-	if imported_animation.has_animation(preferred):
-		if imported_animation.current_animation != preferred:
-			imported_animation.play(preferred)
+	var resolved := _resolve_imported_animation(preferred)
+	if resolved == &"":
+		# Keep the last valid pose rather than silently playing idle while moving.
+		if preferred == "sprint_loop":
+			push_warning("No run/sprint/walk clip found in imported knight rig. Available: %s" % [imported_animation.get_animation_list()])
 		return
-	var fallback := "walk_loop" if preferred == "sprint_loop" else "idle"
-	if imported_animation.has_animation(fallback) and imported_animation.current_animation != fallback:
-		imported_animation.play(fallback)
+	if imported_animation.current_animation != resolved:
+		imported_animation.play(resolved)
+	if preferred == "sprint_loop":
+		# Match the cycle rate to forward velocity; the root body owns translation.
+		imported_animation.speed_scale = clampf(forward_speed / 3.6, 0.85, 2.25)
+	elif preferred == "attack":
+		imported_animation.speed_scale = 1.0
+	else:
+		imported_animation.speed_scale = 1.0
 
 func _update_imported_animation(delta: float) -> void:
 	var desired := "idle"
-	if slide_timer <= 0.0 and not is_on_floor() and imported_animation != null and imported_animation.has_animation("jump"):
+	if slide_timer <= 0.0 and not is_on_floor():
 		desired = "jump"
 	elif slide_timer <= 0.0 and forward_speed > 0.1:
 		desired = "sprint_loop"
-	_play_imported_animation(desired)
 	if attack_animation > 0.0:
+		_play_imported_animation("attack")
 		attack_animation = maxf(0.0, attack_animation - delta)
-		var phase := 1.0 - attack_animation / 0.32
-		if sword_pivot != null:
-			sword_pivot.rotation.z = -0.68 + sin(phase * PI) * 1.95
 	else:
-		if sword_pivot != null:
+		_play_imported_animation(desired)
+	if sword_pivot != null:
+		if attack_animation > 0.0:
+			var phase := 1.0 - attack_animation / 0.32
+			sword_pivot.rotation.z = -0.68 + sin(phase * PI) * 1.95
+		else:
 			sword_pivot.rotation.z = lerpf(sword_pivot.rotation.z, -0.68, delta * 10.0)
 
 func _build_procedural_character() -> void:
