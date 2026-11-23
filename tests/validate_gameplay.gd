@@ -56,7 +56,9 @@ func _run_gameplay_checks() -> void:
 
 	var enemy_health_before := enemy.health
 	player.attack()
-	await physics_frame
+	# Melee damage is intentionally delayed until the blade reaches its impact
+	# frame. Wait through that authored wind-up instead of checking on input.
+	await create_timer(0.24).timeout
 	if enemy.health != enemy_health_before - 1:
 		push_error("GAMEPLAY_TEST: sword attack did not damage enemy")
 		scene.queue_free()
