@@ -375,6 +375,7 @@ func _add_gate_guardian(parent: Node3D) -> void:
 				var animation_nodes := sentinel.find_children("*", "AnimationPlayer", true, false)
 				if not animation_nodes.is_empty():
 					var animation_player := animation_nodes[0] as AnimationPlayer
+					animation_player.add_to_group("shared_combat_animation_source")
 					if animation_player.has_animation("idle"):
 						animation_player.play("idle")
 				# Broken crown spikes and red eyes give the sentinel its own boss identity.
