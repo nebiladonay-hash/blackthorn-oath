@@ -214,8 +214,8 @@ func _build_environment() -> void:
 	environment.sky = sky
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.52, 0.50, 0.58)
-	environment.ambient_light_energy = 1.38
-	environment.tonemap_exposure = 1.12
+	environment.ambient_light_energy = 0.88
+	environment.tonemap_exposure = 0.98
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	environment.glow_enabled = true
 	environment.glow_intensity = 0.42
@@ -233,7 +233,7 @@ func _build_environment() -> void:
 	var moonlight := DirectionalLight3D.new()
 	moonlight.rotation_degrees = Vector3(-35, -28, 0)
 	moonlight.light_color = Color(0.76, 0.79, 0.92)
-	moonlight.light_energy = 1.8
+	moonlight.light_energy = 1.28
 	moonlight.shadow_enabled = true
 	moonlight.directional_shadow_max_distance = 95.0
 	moonlight.shadow_bias = 0.035
@@ -972,7 +972,8 @@ func _update_cinematic(delta: float) -> void:
 		_set_cinematic_copy("THE KINGDOM FELL. THE DEAD REMAINED.", "", 0.0)
 	elif t < 15.0:
 		var amount: float = _ease((t - 11.5) / 3.5)
-		camera.global_position = Vector3(0.4, 2.5, -8.4).lerp(Vector3(0.2, 2.75, -7.8), amount)
+		player.face_for_menu()
+		camera.global_position = Vector3(0.4, 2.5, 6.6).lerp(Vector3(0.2, 2.75, 6.0), amount)
 		camera.look_at(Vector3(0.0, 1.05, -3.0), Vector3.UP)
 		camera.fov = lerpf(40.0, 44.0, amount)
 		_set_cinematic_copy("ONE KNIGHT. ONE ROAD. NO WAY BACK.", "", 0.0)
