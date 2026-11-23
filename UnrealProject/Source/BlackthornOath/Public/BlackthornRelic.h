@@ -14,6 +14,11 @@ public:
 
     virtual void Tick(float DeltaSeconds) override;
 
+protected:
+    virtual void BeginPlay() override;
+
+public:
+
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TObjectPtr<class USphereComponent> PickupTrigger;
 
