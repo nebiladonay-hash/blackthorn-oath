@@ -2,7 +2,7 @@
 
 A landscape, Android-first dark-fantasy action runner built with Godot 4.4.1.
 
-## Prototype 0.4.4 — Hero Facing and Boss Identity
+## Prototype 0.5.0 — Gameplay Foundation Fix
 
 This milestone corrects the environmental and cinematic issues found in the previous visual-review screenshots.
 
@@ -52,7 +52,7 @@ Open the repository in Godot 4.4.1 with matching export templates. GitHub Action
 
 ## Honest status
 
-Prototype 0.4.4 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
+Prototype 0.5.0 is an environment and cinematic vertical-slice upgrade, not a finished commercial game. The cathedral uses an external static mesh; the road dressing, gatehouse and Warden still need hand-authored high-quality materials and further art direction. The player model still needs a production rig, polished animations, hit reactions and sound effects. Real-device visual/performance QA remains mandatory before the next release milestone. Headless validation and screenshot capture do not equal mobile gameplay QA.
 
 
 ## Free asset licenses
@@ -61,3 +61,13 @@ Prototype 0.4.4 is an environment and cinematic vertical-slice upgrade, not a fi
 - **Animation source under evaluation:** Quaternius, *Universal Animation Library 2*, CC0: https://quaternius.com/packs/universalanimationlibrary2.html
 
 - **Footsteps and supplementary impacts:** OpenGameArt, *100 CC0 SFX #2*, CC0: https://opengameart.org/content/100-cc0-sfx-2
+
+
+## 0.5.0 Gameplay Foundation
+- Corrected the imported Mixamo sprint clip mapping (`sprint`, not `sprint_loop`) and synchronized its playback rate to runner speed.
+- Reused the Warden's `sword_attack` and `sword_block` clips on the Silver Knight; both GLBs share identical Mixamo skeleton track paths.
+- Replaced non-physical lane X teleports with physics-based horizontal velocity and added physical enemy hitboxes.
+- Replaced placeholder enemies with the rigged T1 Sentinel and idle, attack, hit and death animation states.
+- Added runtime spatial SFX playback from two CC0 OpenGameArt sound packs.
+- Replaced the launcher emblem with a dark-fantasy cathedral/ember sigil.
+- Added automated runner, collision, lane, combat and visual screenshot checks.
